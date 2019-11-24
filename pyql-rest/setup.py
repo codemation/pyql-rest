@@ -20,6 +20,7 @@ def run(server):
         print("encountered exception when checking projPath")
         print(repr(e))
     try:
+        server.jobs = []
         from apps import setup
         setup.run(server)
         from dbs import setup as db_setup # TOO DOO -Change func name later

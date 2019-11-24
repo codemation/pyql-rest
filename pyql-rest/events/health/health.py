@@ -6,3 +6,5 @@ def run(server):
         path = f'{([l for l in c][0])}events/health/'
         print(path)
     subprocess.Popen(['python', f'{path}checker.py', '/internal/db/check', '30.0', '/internal/db/attach'])
+    # Check jobs queue every 30 seconds and run job
+    subprocess.Popen(['python', f'{path}checker.py', '/internal/job', '30.0', 'job'])

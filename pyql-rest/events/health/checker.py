@@ -20,7 +20,12 @@ if __name__=='__main__':
             if delay < time.time() - start:
                 message, rc = probe(endpoint)
                 print(rc)
-                if not rc == 200:
-                    message, rc = probe(action)
-                    print(message, rc)
+                if action == 'job':
+                    message, rc = probe(message['path'])
+                    print(f"job result: {message}")
+                else:
+                    if not rc == 200:
+                        message, rc = probe(action)
+                        print(message, rc)
+                print(message)
                 start = time.time()
