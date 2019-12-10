@@ -22,4 +22,3 @@ def run(server):
                     return "missing selection", 400
         else: 
             return message, rc
-    server.actions['delete'] = delete_func
