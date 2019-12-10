@@ -28,5 +28,8 @@ def run(server):
     table.run(server)            
             
     from apps.internal import internal
-    internal.run(server)            
+    internal.run(server)                       
+            
+    from apps.cache import cache
+    cache.run(server)           
             
