@@ -41,6 +41,20 @@ def run(server):
             return message, rc
     server.get_table_func = get_table_func
 
+    @server.route('/db/<database>/table/<table>/sync', methods=['POST'])
+    def sync_table_func(database, table):
+        if not database in server.data or not table in server.data[database].tables:
+            return {'message': f"{database} or {table} not found"}, 400
+        dataToSync = request.get_json()
+        tableConfig, _ = get_table_func(database, table)
+        server.data[database].run(f'drop table {table}')
+        message, rc = create_table_func(database, tableConfig)
+        if not rc == 200:
+            return {"message": message}, rc
+        for row in dataToSync:
+            server.data[database].tables[table].insert(row)
+        return {"message": f"{database} {table} sync successful"}, 200
+
     @server.route('/db/<database>/table/create', methods=['POST'])
     def create_table_func(database):
         if database in server.data:
