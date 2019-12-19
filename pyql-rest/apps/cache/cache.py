@@ -37,11 +37,21 @@ def run(server):
                         response, rc = server.actions[action](database, table, cache['txns'][txnId]['txn'])
                         if rc == 200:
                             del cache['txns'][txnId]
+                            setParams = {
+                                'set': {
+                                    'lastTxnUuid': txnId,
+                                    'lastModTime': float(time.time())
+                                    },
+                                'where': {
+                                    'table': table
+                                }
+                            }
+                            server.data[database].tables['pyql'].update(setParams)
                         return response, rc
                     elif action == 'cancel':
                         del cache['txns'][txnId]
                     else:
-                        return {'message': f"{action} is not a valid action, use /commit or /cancel}"}, 400
+                        return {'message': f"{action} is not a valid action, use /commit or /cancel"}, 400
                 else:
                     return {
                         'message': f"{txnId} is not valid transaction id for db {database} table {table}"

@@ -51,7 +51,7 @@ def run(server):
         message, rc = create_table_func(database, tableConfig)
         if not rc == 200:
             return {"message": message}, rc
-        for row in dataToSync:
+        for row in dataToSync['data']:
             server.data[database].tables[table].insert(row)
         return {"message": f"{database} {table} sync successful"}, 200
 
