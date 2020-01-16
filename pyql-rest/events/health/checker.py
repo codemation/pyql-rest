@@ -5,11 +5,17 @@ def probe(endpoint):
         default staring is http://localhost:8080
     """
     url = f'http://localhost:8080{endpoint}'
-    r = requests.get(url, headers={'Accept': 'application/json'})
     try:
-        return r.json(),r.status_code
-    except:
-        return r.text, r.status_code
+        r = requests.get(url, headers={'Accept': 'application/json'}, timeout=1.0)
+        try:
+            return r.json(),r.status_code
+        except:
+            return r.text, r.status_code
+    except Exception as e:
+        print(f"checker.py Exception encountered while checking {endpoint}")
+        return {"error": f"{repr(e)}"}, 500
+
+
 if __name__=='__main__':
     args = sys.argv
     if len(args) > 3:
@@ -21,8 +27,9 @@ if __name__=='__main__':
                 message, rc = probe(endpoint)
                 print(rc)
                 if action == 'job':
-                    message, rc = probe(message['path'])
-                    print(f"job result: {message}")
+                    try:
+                        message, rc = probe(message['path'])
+                        print(f"job result: {message}")
                 else:
                     if not rc == 200:
                         message, rc = probe(action)

@@ -1,8 +1,8 @@
 # database - type mysql
 def run(server):
-    import sys, os
+    import os
     from pyql import data
-    import mysql.connector
+    log = server.log
     
     os.environ['DB_USER'] = 'josh'
     os.environ['DB_PASSWORD'] = 'abcd1234'
@@ -26,7 +26,11 @@ def run(server):
     def attach(config):
         database = config['database']
         try:
-            server.data[database] = data.database(mysql.connector.connect, **config)
+            if config['type'] == 'mysql':
+                import mysql.connector as connector
+            else:
+                import sqlite3.connect as connector
+            server.data[database] = data.database(connector, **config)
         except Exception as e:
             print(repr(e))
             error = repr(e)
