@@ -13,7 +13,7 @@ def run(server):
             # Get transaction from cache db
             if action == 'commit':
                 #commit txn
-                txn = server.data[database].tables['cache'].select('*',
+                txn = server.data['pyql'].tables['cache'].select('*',
                     where={'id': txnId}
                 )
                 if len(txn) == 1:
@@ -21,7 +21,7 @@ def run(server):
                     r, rc = server.actions[tx['type']](database, table, tx['txn'])
                     log.warning(f"##cache {action} response {r} rc {rc}")
                     if rc == 200:
-                        delTxn = server.data[database].tables['cache'].delete(
+                        delTxn = server.data['pyql'].tables['cache'].delete(
                             where={'id': txnId}
                         )
                         # update last txn id
@@ -43,7 +43,7 @@ def run(server):
                 log.warning(warning)
                 return {'warning': warning}, 400
             if action == 'cancel':
-                delTxn = server.data[database].tables['cache'].delete(
+                delTxn = server.data['pyql'].tables['cache'].delete(
                     where={'id': txnId}
                 )
                 return {'deleted': txnId}, 200
@@ -51,7 +51,7 @@ def run(server):
     @server.route('/db/<database>/cache/<table>/<action>/<txuuid>', methods=['POST'])
     def cache_action(database, table, action,txuuid):
         transaction = request.get_json()
-        server.data[database].tables['cache'].insert(**{
+        server.data['pyql'].tables['cache'].insert(**{
             'id': txuuid,
             'type': action,
             'txn': transaction

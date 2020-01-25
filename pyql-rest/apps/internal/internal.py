@@ -8,19 +8,10 @@ def run(server):
         if db.type == 'sqlite':
             result = db.get(f"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
             tables = [t[0] for t in result]
-            if database == 'cluster':
-                clusterTables = ['clusters', 'endpoints', 'databases', 'tables', 'state', 'pyql']
-                for index, check in enumerate(clusterTables):
-                    log.info(f"checking {check}")
-                    if not check in tables:
-                        error = f"missing table {check} in database {database}"
-                        log.error(warning)
-                        return {'message': error}, 500
-                    
             for r in result:
                 log.info(f"db_check - found {r}")
         else:    
-            tables = db.run('show tables')
+            tables = db.get('show tables')
             log.info(f"db_check result: {tables}")
             for table in tables:
                 if not table[0] in server.data[database].tables:
@@ -29,7 +20,7 @@ def run(server):
     
     def internal_job_add(job):
         jobId = str(uuid.uuid1())
-        server.clusters.internaljobs.insert(**{
+        server.data['pyql'].tables['internaljobs'].insert(**{
             'id': jobId,
             'status': 'queued',
             'config': job
@@ -39,18 +30,18 @@ def run(server):
     @server.route('/internal/job/<id>/<action>', methods=['POST'])
     def internal_job_queue_action(id, action):
         if action == 'finished':
-            server.clusters.internaljobs.delete(where={'id': id})
+            server.data['pyql'].tables['internaljobs'].delete(where={'id': id})
         if action == 'queued':
-            server.clusters.internaljobs.update(status='queued', where={'id': id})
+            server.data['pyql'].tables['internaljobs'].update(status='queued', where={'id': id})
         return {"message": f"{action} on jobId {id} completed successfully"}, 200
 
     @server.route('/internal/job')
     def internal_job_queue_pull():
-        jobs = server.clusters.internaljobs.select('id', where={'status': 'queued'})
+        jobs = server.data['pyql'].tables['internaljobs'].select('id', where={'status': 'queued'})
         if len(jobs) > 0:
             for job in jobs:
-                server.clusters.internaljobs.update(status='running', where={'id': job['id'], 'status': 'queued'})
-                reserved = server.clusters.internaljobs.select('*', where={'id': job['id'], 'status': 'running'})
+                server.data['pyql'].tables['internaljobs'].update(status='running', where={'id': job['id'], 'status': 'queued'})
+                reserved = server.data['pyql'].tables['internaljobs'].select('*', where={'id': job['id'], 'status': 'running'})
                 if len(reserved) == 1:
                     return {'id': job['id'], 'config': reserved[0]['config']}, 200
         return {"status": 200, "message": "no jobs in queue"}, 200

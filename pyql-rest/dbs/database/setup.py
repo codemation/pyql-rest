@@ -1,8 +1,4 @@
  # database
-def attach_tables(server):
-    #Tables are added  here
+def attach_tables(server):            
     pass
-            
-    from dbs.database.tables import pyql
-    pyql.db_attach(server)
             

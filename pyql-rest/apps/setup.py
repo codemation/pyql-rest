@@ -33,3 +33,6 @@ def run(server):
     from apps.cache import cache
     cache.run(server)           
             
+    from apps.rest import rest
+    rest.run(server)            
+            

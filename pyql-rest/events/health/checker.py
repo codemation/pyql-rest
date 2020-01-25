@@ -1,10 +1,27 @@
-import sys, time, requests
+import sys, time, requests, os
+
+if 'PYQL_TYPE' in os.environ:
+    if os.environ['PYQL_TYPE'] == 'K8S':
+        import socket
+        os.environ['PYQL_NODE'] = socket.getfqdn()
+
+if 'PYQL_NODE' in os.environ:
+    nodeIP = os.environ['PYQL_NODE']
+
+if 'PYQL_TYPE' in os.environ:
+    if os.environ['PYQL_TYPE'] == 'K8S':
+        import socket
+        nodeIP = socket.gethostbyname(socket.getfqdn())
+
+clusterSvcName = f'http://{os.environ["PYQL_CLUSTER_SVC"]}'
+nodePath = f'http://{nodeIP}:{os.environ["PYQL_PORT"]}'
+
 
 def probe(endpoint):
     """
         default staring is http://localhost:8080
     """
-    url = f'http://localhost:8080{endpoint}'
+    url = f'{nodePath}{endpoint}'
     try:
         r = requests.get(url, headers={'Accept': 'application/json'}, timeout=1.0)
         try:
@@ -30,6 +47,8 @@ if __name__=='__main__':
                     try:
                         message, rc = probe(message['path'])
                         print(f"job result: {message}")
+                    except Exception as e:
+                        print(repr(e))
                 else:
                     if not rc == 200:
                         message, rc = probe(action)
