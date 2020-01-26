@@ -5,12 +5,14 @@ def run(server):
     log = server.log
     
     
+    """
     os.environ['DB_USER'] = 'josh'
     os.environ['DB_PASSWORD'] = 'abcd1234'
     os.environ['DB_HOST'] = 'localhost'
     os.environ['DB_PORT'] = '3306'
     os.environ['DB_NAMES'] = 'joshdb'
     os.environ['DB_TYPE'] = 'mysql'
+    """
     
     env = ['DB_USER','DB_PASSWORD','DB_HOST', 'DB_PORT', 'DB_NAMES', 'DB_TYPE']
 
