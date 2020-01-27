@@ -39,11 +39,21 @@ def run(server):
             
     server.get_table_func = get_table_func
 
+    @server.route('/db/<database>/table/<table>/create', methods=['POST'])
+    def database_table_create(database, table):
+        newTableConfig = request.get_json()
+        return create_table_func(database, newTableConfig)
+
+
     @server.route('/db/<database>/table/<table>/sync', methods=['POST'])
     def sync_table_func(database, table):
-        if not database in server.data or not table in server.data[database].tables:
-            message = f"{database} or {table} not found in memory"
-            log.error(messages)
+        if not database in server.data:
+            message = f"{database} not found in endpoint"
+            log.error(message)
+            return {"message": message}, 500
+        if not table in server.data[database].tables:
+            message = f"{table} not found in database {database}"
+            log.error(message)
             return {'message': message}, 400
         dataToSync = request.get_json()
         tableConfig, _ = get_table_func(database, table)
