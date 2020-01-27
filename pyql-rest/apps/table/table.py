@@ -48,9 +48,13 @@ def run(server):
     @server.route('/db/<database>/table/<table>/sync', methods=['POST'])
     def sync_table_func(database, table):
         if not database in server.data:
+            server.db_check(database)
+        if not database in server.data:
             message = f"{database} not found in endpoint"
             log.error(message)
             return {"message": message}, 500
+        if not table in server.data[database].tables:
+            server.db_check(database)
         if not table in server.data[database].tables:
             message = f"{table} not found in database {database}"
             log.error(message)
@@ -100,4 +104,5 @@ def run(server):
                     columns,
                     tableConfig[tableName]["primaryKey"]
                     )
+                server.db_check(database)
                 return {"message": f"""table {tableName} created successfully """}, 200
