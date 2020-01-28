@@ -3,7 +3,11 @@ def run(server):
     pass # apps start here
 
     def check_db_table_exist(database,table):
+        if not database in server.data:
+            server.db_check(database)
         if database in server.data:
+            if not table in server.data[database].tables:
+                server.db_check(database)
             if table in server.data[database].tables:
                 return "OK", 200
             else:
