@@ -32,9 +32,9 @@ def run(server):
         #try:
         if config['type'] == 'mysql':
             from mysql.connector import connect as connector
-            if config['HOSTNAME'] == 'localhost':
+            if config['DB_HOST'] == 'localhost':
                 import socket, os
-                config['HOSTNAME'] = socket.gethostbyname(os.environ['HOSTNAME'])
+                config['DB_HOST'] = socket.gethostbyname(os.environ['HOSTNAME'])
         else:
             import sqlite3.connect as connector
         server.data[database] = data.database(connector, **config)
