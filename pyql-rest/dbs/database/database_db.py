@@ -46,7 +46,7 @@ def run(server):
             except Exception as e:
                 log.exception(e)
                 log.warning(f"enountered exception during db {database} connect - sleeping {dbConnnectRetryDelayInSec} sec and retrying")
-                sleep(dbConnnectRetryDelayInSec)
+                time.sleep(dbConnnectRetryDelayInSec)
                 tryCount+=1
                 continue
         log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")
