@@ -1,9 +1,10 @@
 # database - type mysql
 def run(server):
-    import os
+    import os, time
     from pyql import data
     log = server.log
-    
+    dbConnnectRetries = 10
+    dbConnnectRetryDelayInSec = 5
     
     """
     os.environ['DB_USER'] = 'josh'
@@ -29,6 +30,7 @@ def run(server):
         return config, 200
     def attach(config):
         database = config['database']
+        tryCount = 0
         #try:
         if config['type'] == 'mysql':
             from mysql.connector import connect as connector
@@ -37,10 +39,19 @@ def run(server):
                 config['host'] = socket.gethostbyname(os.environ['HOSTNAME'])
         else:
             import sqlite3.connect as connector
-        server.data[database] = data.database(connector, **config)
-        #TODO - add job to retry /internal/dbs/attach
-        return {"message": f"db {database} attached successfully"}, 200
-            
+        while tryCount < dbConnnectRetries:
+            try:
+                server.data[database] = data.database(connector, **config)
+                return {"message": f"db {database} attached successfully"}, 200
+            except Exception as e:
+                log.exception(e)
+                log.warning(f"enountered exception during db {database} connect - sleeping {dbConnnectRetryDelayInSec} sec and retrying")
+                sleep(dbConnnectRetryDelayInSec)
+                tryCount+=1
+                continue
+        log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")
+        assert False, f"{repr(e)}"
+        
     @server.route('/internal/db/<database>/attach')
     def attach_database(database):
         config, rc = get_db_config()
