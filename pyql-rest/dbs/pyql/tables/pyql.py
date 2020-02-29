@@ -21,11 +21,10 @@ def db_attach(server):
     for database in server.data:
         if database == 'pyql':
             continue
-        db = server.data[database]
-        dbSelect = pyqldb.tables['pyql'].select('uuid','database', where={'database': db})
+        dbSelect = pyqldb.tables['pyql'].select('uuid','database', where={'database': database})
         if len(dbSelect) > 0:
             continue
-        # DB did not exist yet
+        # DB did not exist yet in pyql table
         dbUuid = uuid.uuid1()
         for tb in server.data[database].tables:
             pyqldb.tables['pyql'].insert(**{
