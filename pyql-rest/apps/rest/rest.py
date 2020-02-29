@@ -53,4 +53,11 @@ def run(server):
             }
         }
         server.internal_job_add(joinClusterJob  )
+        @server.route('/pyql/node')
+        def cluster_node():
+            """
+                returns node-id - to be used by workers instead of relying on pod ip:
+            """
+            log.warning(f"get nodeId called {nodeId}")
+            return {"uuid": nodeId}, 200
         #TODO - Create path for adding job to rejoin cluster if a table is discovered as added / removed
