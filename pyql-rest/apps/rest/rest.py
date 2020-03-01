@@ -58,6 +58,12 @@ def run(server):
             """
                 returns node-id - to be used by workers instead of relying on pod ip:
             """
-            log.warning(f"get nodeId called {nodeId}")
+            log.warning(f"get nodeId called {nodeIdzz}")
             return {"uuid": nodeId}, 200
+        @server.route('/cache/reset', methods=['POST'])
+        def node_reset_cache(reason=None):
+            reason = request.get_json() if reason == None else reason
+            log.warning(f"cache reset called for {reason}")
+            server.reset_cache()
+        server.node_reset_cache = node_reset_cache
         #TODO - Create path for adding job to rejoin cluster if a table is discovered as added / removed
