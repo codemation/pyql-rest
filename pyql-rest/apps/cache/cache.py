@@ -4,6 +4,7 @@ def run(server):
     log = server.log
     txnDefaultWaitInSec = 0.005 # default 5 ms
     txnMaxWaitTimeInSec = 0.125
+    cache = server.data['pyql'].tables['cache']
 
     @server.route('/db/<database>/cache/<table>/txn/<action>', methods=['POST'])
     def cache_txn_manage(database, table, action, trans=None):
@@ -19,9 +20,11 @@ def run(server):
             # Get transaction from cache db
             if action == 'commit':
                 while True:
-                    txns = server.data[database].tables['cache'].select('*',
+                    txns = cache.select('id','timestamp',
                         where={'tableName': table}
                     )
+                    if not txnId in {tx['id'] for tx in txns}:
+                        return {"message": f"{txnId} does not exist in cache"}, 400
                     if len(txns) == 1:
                         if not txns[0]['id'] == txnId:
                             warning = f"txn with id {txnId} does not exist for {database} {table}"
@@ -34,14 +37,15 @@ def run(server):
                     txns = sorted(txns, key=lambda txn: txn['timestamp'])
                     for ind, txn in enumerate(txns):
                         if txn['id'] == txnId:
-                            txnOrder = ind
                             if ind == 0:
                                 tx = txns[0]
                                 break
                             if waitTime > txnMaxWaitTimeInSec:
                                 warning = f"timeout of {waitTime} reached while waiting to commit {txnId} for {database} {table}, waiting on {txns[:ind]}"
                                 log.warning(warning)
-                                return {'warning': warning}, 400
+                                log.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {txnMaxWaitTimeInSec} reached")
+                                cache.delete(where={'id': txns[0]['id']})
+                                break
                             break
                     if tx == None:
                         log.warning(f"txnId {txnId} is behind txns {txns[:ind]} - waiting {waitTime} to retry")
@@ -53,6 +57,8 @@ def run(server):
                 if tx == None:
                     log.error("tx is None, this should not hppen")
                     return {"error": "tx was none"}, 500
+                tx = cache.select('type','txn',
+                        where={'id': txnId})[0]
                 try:
                     r, rc = server.actions[tx['type']](database, table, tx['txn'])
                     log.warning(f"##cache {action} response {r} rc {rc}")
@@ -61,7 +67,7 @@ def run(server):
                     r, rc = repr(e), 400
                 
                 
-                delTxn = server.data[database].tables['cache'].delete(
+                delTxn = cache.delete(
                     where={'id': txnId}
                 )
                 if rc == 200:
@@ -75,13 +81,13 @@ def run(server):
                             'tableName': table
                         }
                     }
-                    server.data['pyql'].tables['pyql'].update(
+                    server.data['cluster'].tables['pyql'].update(
                             **setParams['set'],
                             where=setParams['where']
                     )
                 return {"message": r, "status": rc}, rc
             if action == 'cancel':
-                delTxn = server.data[database].tables['cache'].delete(
+                delTxn = cache.delete(
                     where={'id': txnId}
                 )
                 return {'deleted': txnId}, 200
@@ -89,7 +95,7 @@ def run(server):
     @server.route('/db/<database>/cache/<table>/<action>/<txuuid>', methods=['POST'])
     def cache_action(database, table, action,txuuid):
         transaction = request.get_json()
-        server.data[database].tables['cache'].insert(**{
+        cache.insert(**{
             'id': txuuid,
             'tableName': table,
             'type': action,
