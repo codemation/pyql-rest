@@ -58,7 +58,7 @@ def run(server):
             """
                 returns node-id - to be used by workers instead of relying on pod ip:
             """
-            log.warning(f"get nodeId called {nodeIdzz}")
+            log.warning(f"get nodeId called {nodeId}")
             return {"uuid": nodeId}, 200
         @server.route('/cache/reset', methods=['POST'])
         def node_reset_cache(reason=None):
