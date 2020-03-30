@@ -15,6 +15,7 @@ if __name__ == '__main__':
         clusterName = sys.argv[4]
         action = sys.argv[5]
         tables = sys.argv[6]
+        token = sys.argv[7]
     except:
         print("expected input: ")
         print("python server.py <node-ip> <node-port> <clusterIp:port>")

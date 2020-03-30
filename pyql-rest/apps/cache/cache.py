@@ -7,6 +7,7 @@ def run(server):
     cache = server.data['pyql'].tables['cache']
 
     @server.route('/db/<database>/cache/<table>/txn/<action>', methods=['POST'])
+    @server.is_authenticated('local')
     def cache_txn_manage(database, table, action, trans=None):
         """
             method for managing txns - canceling / commiting
@@ -93,6 +94,7 @@ def run(server):
                 return {'deleted': txnId}, 200
 
     @server.route('/db/<database>/cache/<table>/<action>/<txuuid>', methods=['POST'])
+    @server.is_authenticated('local')
     def cache_action(database, table, action,txuuid):
         transaction = request.get_json()
         cache.insert(**{

@@ -16,6 +16,9 @@ def run(server):
             return {'status': 404, 'message': f'database with name {database} not found'}, 404
     server.check_db_table_exist = check_db_table_exist
 
+    from apps.auth import auth
+    auth.run(server)
+    
     from apps.select import select
     select.run(server)            
             
@@ -39,4 +42,6 @@ def run(server):
             
     from apps.rest import rest
     rest.run(server)            
+            
+           
             

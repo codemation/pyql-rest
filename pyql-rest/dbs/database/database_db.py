@@ -6,14 +6,14 @@ def run(server):
     dbConnnectRetries = 10
     dbConnnectRetryDelayInSec = 5
     
-    """
-    os.environ['DB_USER'] = 'josh'
-    os.environ['DB_PASSWORD'] = 'abcd1234'
-    os.environ['DB_HOST'] = 'localhost'
-    os.environ['DB_PORT'] = '3306'
-    os.environ['DB_NAMES'] = 'joshdb'
-    os.environ['DB_TYPE'] = 'mysql'
-    """
+    if os.environ['PYQL_CLUSTER_ACTION'] == 'test':
+        os.environ['DB_USER'] = 'josh'
+        os.environ['DB_PASSWORD'] = 'abcd1234'
+        os.environ['DB_HOST'] = '192.168.3.33'
+        os.environ['DB_PORT'] = '3306'
+        os.environ['DB_NAMES'] = 'joshdb'
+        os.environ['DB_TYPE'] = 'mysql'
+    
     
     env = ['DB_USER','DB_PASSWORD','DB_HOST', 'DB_PORT', 'DB_NAMES', 'DB_TYPE']
 

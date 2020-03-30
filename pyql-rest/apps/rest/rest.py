@@ -45,6 +45,7 @@ def run(server):
             "data": {
                 "name": os.environ['HOSTNAME'],
                 "path": f"{os.environ['PYQL_NODE']}:{os.environ['PYQL_PORT']}",
+                "token": server.env['PYQL_LOCAL_SERVICE_TOKEN'],
                 "database": {
                     'name': db,
                     'uuid': dbuuid
@@ -52,7 +53,9 @@ def run(server):
                 "tables": tables
             }
         }
-        server.internal_job_add(joinClusterJob  )
+        if 'PYQL_CLUSTER_JOIN_TOKEN' in os.environ and not os.environ['PYQL_CLUSTER_ACTION'] == 'test':
+            joinClusterJob['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
+            server.internal_job_add(joinClusterJob)
         @server.route('/pyql/node')
         def cluster_node():
             """
@@ -61,6 +64,7 @@ def run(server):
             log.warning(f"get nodeId called {nodeId}")
             return {"uuid": nodeId}, 200
         @server.route('/cache/reset', methods=['POST'])
+        @server.is_authenticated('local')
         def node_reset_cache(reason=None):
             reason = request.get_json() if reason == None else reason
             log.warning(f"cache reset called for {reason}")
