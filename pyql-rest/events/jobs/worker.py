@@ -28,7 +28,7 @@ def probe(path, method='GET', data=None, auth=None, **kw):
     auth = 'PYQL_CLUSTER_SERVICE_TOKEN' if not auth == 'local' else 'PYQL_LOCAL_SERVICE_TOKEN'
     headers = {
         'Accept': 'application/json', "Content-Type": "application/json",
-        "Authentication": f"Token {env[auth] if not 'joinToken' in kw else kw['joinToken']}"}
+        "Authentication": f"Token {env[auth] if not 'token' in kw else kw['token']}"}
     if method == 'GET':
         r = requests.get(path, headers=headers,
                 timeout=1.0)
