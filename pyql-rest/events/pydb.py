@@ -2,9 +2,14 @@
 import os
 def get_db():
     config=dict()
-    with open('.cmddir', 'r') as projDir:
-        for projectPath in projDir:
-            config['database'] = f'{projectPath}dbs/pyql/pyql'
+    if 'PYQL_TYPE' in os.environ:
+        if os.environ['PYQL_TYPE'] == 'K8S':
+            dbLocation = os.environ['PYQL_VOLUME_PATH']
+            config['database'] = f'{dbLocation}/pyql'
+    else:
+        with open('.cmddir', 'r') as projDir:
+            for projectPath in projDir:
+                config['database'] = f'{projectPath}dbs/pyql/pyql'
     from pyql import data
     import sqlite3
     db = data.database(sqlite3.connect, **config)

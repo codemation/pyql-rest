@@ -27,16 +27,14 @@ def run(server):
     @server.route('/internal/db/attach')
     def pyql_attach():
         config=dict()
-        os.environ['DB_NAME'] = 'pyql' # TODO - Add to env variables config later
-        dbname = os.environ['DB_NAME'] # TODO - Add to env variables config later
         if 'PYQL_TYPE' in os.environ:
             if os.environ['PYQL_TYPE'] == 'K8S':
                 dbLocation = os.environ['PYQL_VOLUME_PATH']
-                config['database'] = f'{dbLocation}/{dbname}'
+                config['database'] = f'{dbLocation}/pyql'
         else:
             with open('.cmddir', 'r') as projDir:
                 for projectPath in projDir:
-                    config['database'] = f'{projectPath}dbs/pyql/{dbname}'
+                    config['database'] = f'{projectPath}dbs/pyql/pyql'
         #USE ENV PATH for PYQL library or /pyql/
         #sys.path.append('/pyql/' if os.getenv('PYQL_PATH') == None else os.getenv('PYQL_PATH'))
         #try:
