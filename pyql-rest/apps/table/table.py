@@ -23,6 +23,8 @@ def run(server):
 
     @server.route('/db/<database>/table/<table>')
     @server.is_authenticated('local')
+    def db_get_table_func(database,table):
+        return get_table_func(database, table)
     def get_table_func(database,table):
         message, rc = server.check_db_table_exist(database,table)
         if not rc == 200:
