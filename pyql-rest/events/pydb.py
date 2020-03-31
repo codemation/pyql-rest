@@ -4,7 +4,6 @@ def get_db():
     config=dict()
     with open('.cmddir', 'r') as projDir:
         for projectPath in projDir:
-            dbName = os.getenv('DB_NAME').rstrip()
             config['database'] = f'{projectPath}dbs/pyql/pyql'
     from pyql import data
     import sqlite3
