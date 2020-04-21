@@ -88,6 +88,7 @@ def run(server):
                         if location == 'local':
                             if not request.auth in server.data['pyql'].tables['authlocal']:
                                 return {"error": "un-authorized access"}, 401
+                            log.warining(f"local auth called using {request.auth} finished")
                 return f(*args, **kwargs)
             check_auth.__name__ = '_'.join(str(uuid.uuid4()).split('-'))
             return check_auth
