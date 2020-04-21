@@ -13,10 +13,13 @@ def run(server):
             else:
                 params = request.get_json()
                 if 'select' in params:
-                    response = server.data[database].tables[table].select(
-                        *params['select'], 
-                        where=params['where'] if 'where' in params else {}
-                        )
+                    p = {}
+                    select = params['select']
+                    if 'join' in params:
+                        p['join'] = params['join']
+                    if 'where' in params:
+                        p['where'] = params['where']
+                    response = server.data[database].tables[table].select(*select, **p)
                     return {"data": response}, 200
                 else:
                     warning = f"table {table} select - missing selection"
