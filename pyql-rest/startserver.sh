@@ -7,8 +7,8 @@ sed -i 's/HOSTIP/'$HOSTIP'/g' /etc/nginx/sites-enabled/sites-available-pyql-rest
 while true;
 do
     HOSTIP=$(cat /etc/hosts | grep $(hostname) | awk '{print $1}')
-    sed -i 's/HOSTIP/'$HOSTIP'/g' /etc/nginx/sites-enabled/sites-available-pyql-cluster
-    grep $HOSTIP /etc/nginx/sites-enabled/sites-available-pyql-cluster
+    sed -i 's/HOSTIP/'$HOSTIP'/g' /etc/nginx/sites-enabled/sites-available-pyql-rest
+    grep $HOSTIP /etc/nginx/sites-enabled/sites-available-pyql-rest
     if [ $? == 0 ]
     then
         break
@@ -21,8 +21,8 @@ then
     while true;
     do
         # used by stand-alone / test pyql-cluster instances with a variable hostname 
-        sed -i 's/PYQL_HOST/'$PYQL_HOST'/g' /etc/nginx/sites-enabled/sites-available-pyql-cluster
-        grep $PYQL_HOST /etc/nginx/sites-enabled/sites-available-pyql-cluster
+        sed -i 's/PYQL_HOST/'$PYQL_HOST'/g' /etc/nginx/sites-enabled/sites-available-pyql-rest
+        grep $PYQL_HOST /etc/nginx/sites-enabled/sites-available-pyql-rest
         if [ $? == 0 ]
         then
             break
