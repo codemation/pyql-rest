@@ -2,6 +2,7 @@ server {
     listen PYQL_PORT;
     server_name localhost
                 HOSTIP
+                PYQL_HOST
                 pyql-rest
                 *.default.svc.cluster.local;
 
