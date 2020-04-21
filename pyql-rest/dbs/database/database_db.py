@@ -22,6 +22,9 @@ def run(server):
         conf = ['user','password','host','port', 'databases', 'type']
         try:
             config = {cnfVal: os.getenv(dbVal).rstrip() for dbVal,cnfVal in zip(env,conf)}
+            config['logger'] = log
+            if 'PYQL_DEBUG' in os.environ and os.environ['PYQL_DEBUG'] == 'Enabled':
+                config['debug'] = True
         except Exception as e:
             log.error(f'Missing an environment variable, {repr(e)}')
             config= {cnfVal: os.getenv(dbVal) for dbVal,cnfVal in zip(env,conf)}

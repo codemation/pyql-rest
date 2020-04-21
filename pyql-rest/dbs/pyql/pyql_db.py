@@ -13,10 +13,15 @@ def run(server):
             if os.environ['PYQL_TYPE'] == 'K8S':
                 dbLocation = os.environ['PYQL_VOLUME_PATH']
                 config['database'] = f'{dbLocation}/pyql'
+
         else:
             with open('.cmddir', 'r') as projDir:
                 for projectPath in projDir:
                     config['database'] = f'{projectPath}dbs/pyql/pyql'
+        
+        config['logger'] = log
+        if 'PYQL_DEBUG' in os.environ and os.environ['PYQL_DEBUG'] == 'Enabled':
+            config['debug'] = True
         log.info("finished imports")
         server.data['pyql'] = data.database(sqlite3.connect, **config)
         log.info("finished dbsetup")
