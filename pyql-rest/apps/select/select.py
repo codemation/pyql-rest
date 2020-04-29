@@ -6,6 +6,7 @@ def run(server):
     @server.is_authenticated('local')
     def select_func(database,table):
         message, rc = server.check_db_table_exist(database,table)
+        """
         if rc == 200:
             if request.method == 'GET':
                 response = server.data[database].tables[table].select('*')
@@ -27,3 +28,27 @@ def run(server):
                     return {"warning": warning}, 400
         else: 
             return message, rc
+        
+                message, rc = server.check_db_table_exist(database,table)
+        """
+        if not rc == 200:
+            return {"error": f"received non 200 rec with message {message}, rc {rc} during check_db_table_exist"}, 500
+        if request.method == 'GET' and params == None:
+            response = server.data[database].tables[table].select('*')
+        else:
+            params = request.get_json() if params == None else params
+            if not 'select' in params:
+                warning = f"table {table} select - missing selection"
+                log.warning(warning)
+                return {"warning": warning}, 400
+            p = {}
+            select = params['select']
+            if 'join' in params:
+                p['join'] = params['join']
+            if 'where' in params:
+                p['where'] = params['where']
+            response = server.data[database].tables[table].select(*select, **p)
+        if response == None or isinstance(response, str):
+            return {"error": f"response object returned {response}"}, 500
+        response = [response] if isinstance(response, dict) else response
+        return {"data": response}, 200
