@@ -29,8 +29,7 @@ def run(server):
                     if len(txns) == 1:
                         if not txns[0]['id'] == txnId:
                             warning = f"txn with id {txnId} does not exist for {database} {table}"
-                            log.warning(warning)
-                            return {'warning': warning}, 400
+                            return {'warning': log.warning(warning)}, 400
                         # txnId is only value inside
                         tx = txns[0]
                         break
@@ -42,8 +41,7 @@ def run(server):
                                 tx = txns[0]
                                 break
                             if waitTime > txnMaxWaitTimeInSec:
-                                warning = f"timeout of {waitTime} reached while waiting to commit {txnId} for {database} {table}, waiting on {txns[:ind]}"
-                                log.warning(warning)
+                                log.warning(f"timeout of {waitTime} reached while waiting to commit {txnId} for {database} {table}, waiting on {txns[:ind]}")
                                 log.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {txnMaxWaitTimeInSec} reached")
                                 cache.delete(where={'id': txns[0]['id']})
                                 break
@@ -56,16 +54,14 @@ def run(server):
                     break
 
                 if tx == None:
-                    log.error("tx is None, this should not hppen")
-                    return {"error": "tx was none"}, 500
+                    return {"error": log.error("tx is None, this should not hppen")}, 500
                 tx = cache.select('type','txn',
                         where={'id': txnId})[0]
                 try:
                     r, rc = server.actions[tx['type']](database, table, tx['txn'])
                     log.warning(f"##cache {action} response {r} rc {rc}")
                 except Exception as e:
-                    log.exception(e)
-                    r, rc = repr(e), 400
+                    r, rc = log.exception(f"exception encountered during cache {action} {repr(e)}"), 400
                 
                 
                 delTxn = cache.delete(

@@ -1,6 +1,6 @@
 
 def run(server):
-    pass # apps start here
+    server.actions = {}
 
     def check_db_table_exist(database,table):
         if not database in server.data:

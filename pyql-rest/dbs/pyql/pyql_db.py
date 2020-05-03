@@ -26,7 +26,6 @@ def run(server):
         server.data['pyql'] = data.database(sqlite3.connect, **config)
         log.info("finished dbsetup")
         setup.attach_tables(server)
-        log.info("finished attach_tables")
-        return {"status": 200, "message": f"database pyql attached successfully"}, 200
+        return {"status": 200, "message": log.info(f"database pyql attached successfully")}, 200
     response = pyql_attach()
     log.warning(response)

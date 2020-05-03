@@ -47,13 +47,11 @@ def run(server):
                 server.data[database] = data.database(connector, **config)
                 return {"message": f"db {database} attached successfully"}, 200
             except Exception as e:
-                log.exception(e)
-                log.warning(f"enountered exception during db {database} connect - sleeping {dbConnnectRetryDelayInSec} sec and retrying")
+                log.exception(f"enountered exception {repr(e)} during db {database} connect - sleeping {dbConnnectRetryDelayInSec} sec and retrying")
                 time.sleep(dbConnnectRetryDelayInSec)
                 tryCount+=1
                 continue
         log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")
-        assert False, f"{repr(e)}"
         
     @server.route('/internal/db/<database>/attach')
     def attach_database(database):

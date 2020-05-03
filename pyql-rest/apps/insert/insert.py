@@ -13,8 +13,7 @@ def run(server):
             for k,v in params.items(): 
                 if not k in table.columns:
                     error = f"invalid key provided {k} not found in table {table}"
-                    log.error(error)
-                    return {"error": error}, 400
+                    return {"error": log.error(error)}, 400
             response = table.insert(**params)
             return {"status": 200, "message": "items added"}, 200
         else:

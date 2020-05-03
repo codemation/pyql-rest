@@ -22,14 +22,15 @@ def run(server):
         return decode(encodedPw, auth)
     def validate_user_pw(user, pw):
         userSel = server.clusters.auth.select('id', 'password', where={'username': user})
-        if len(userSel) > 0:
-            log.warning(f"checking auth for {userSel}")
-            try:
-                decoded = decode_password(userSel[0]['password'], pw)
-                return {"message": f"Auth Ok", "userid": userSel[0]['id']}, 200
-            except Exception as e:
-                log.exception(f"Auth failed for user {user} - invalid credentials")
-        return {"message": f"user / pw combination does not exist or is incorrect"}, 401
+        if len(userSel) == 0:
+            return {"message": f"user / pw combination does not exist or is incorrect"}, 401
+        log.warning(f"checking auth for {userSel}")
+        try:
+            decoded = decode_password(userSel[0]['password'], pw)
+            return {"message": f"Auth Ok", "userid": userSel[0]['id']}, 200
+        except Exception as e:
+            return {"error": log.exception(f"Auth failed for user {user} - invalid credentials")}, 401
+        
     def is_authenticated(location):
         """
         usage:
@@ -47,30 +48,23 @@ def run(server):
                     key = server.env[tokenType]
                     log.warning(f"checking auth from {check_auth.__name__} for {f} {args} {kwargs} {request.headers}")
                     if not 'Authentication' in request.headers:
-                        error = "missing Authentication"
-                        log.error(error)
-                        return {"error": error}, 401
+                        return {"error": log.error("missing Authentication")}, 401
                     auth = request.headers['Authentication']
                     if 'Token' in auth:
                         token = auth.split(' ')[1].rstrip()
                         #decodedToken = decode(token, os.environ[tokenType])
                         decodedToken = decode(token, key)
-                        if decodedToken == None:
-                            error = f"token authentication failed"
-                            log.error(error)
-                            return {"error": error}, 401
+                        if decodedToken == None: 
+                            return {"error": log.error("token authentication failed")}, 401
                         request.auth = decodedToken['id']
                         if 'join' in decodedToken['expiration']:
                             # Join tokens should only be used to join an endpoint to a cluster
                             if not 'join_cluster' in str(f):
-                                log.error(f"token authentication failed, join token auth attempted for {f}")
-                                error = f"invalid token supplied"
-                                return {"error": error}, 400
+                                return {"error": log.error(f"token authentication failed, join token auth attempted")}, 400
                         if isinstance(decodedToken['expiration'], float):
                             if not decodedToken['expiration'] > time.time():
                                 warning = f"token valid but expired for user with id {decodedToken['id']}"
-                                log.warining(warning)
-                                return {"error": warning}, 401 #TODO - Check returncode for token expiration
+                                return {"error": log.warning(warning)}, 401 #TODO - Check returncode for token expiration
                         log.warning(f"token auth successful for {request.auth} using type {tokenType} key {key}")
                     if 'Basic' in auth:
                         base64Cred = auth.split(' ')[1]
@@ -83,13 +77,12 @@ def run(server):
                         response, rc = validate_user_pw(username, password)
                         if not rc == 200:
                             error = f"auth failed from {check_auth.__name__} for {f} - username {username}"
-                            log.error(error)
-                            return {"error": error}, 401
+                            return {"error": log.error(error)}, 401
                         request.auth = response['userid']
                         # check if userid is a parent for other users
                 if location == 'local':
                     if not request.auth in server.data['pyql'].tables['authlocal']:
-                        return {"error": "un-authorized access"}, 401
+                        return {"error": log.error("un-authorized access")}, 401
                     log.warning(f"local auth called using {request.auth} finished")
                 return f(*args, **kwargs)
             check_auth.__name__ = '_'.join(str(uuid.uuid4()).split('-'))
@@ -113,9 +106,8 @@ def run(server):
             if key in keydata:
                 value = keydata[key]
                 server.env[key] = value
-                log.warning(f"{key} updated successfully with {value}")
-                return {"message": f"{key} updated successfully"}, 200
-        return {"error": "invalid location or key - specified"}, 400
+                return {"message": log.warning(f"{key} updated successfully with {value}")}, 200
+        return {"error": log.error("invalid location or key - specified")}, 400
 
     if not 'PYQL_LOCAL_TOKEN_KEY' in server.env:
         log.warning('creating PYQL_LOCAL_TOKEN_KEY')
