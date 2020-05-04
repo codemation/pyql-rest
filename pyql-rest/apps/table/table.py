@@ -14,8 +14,10 @@ def run(server):
             tablesConfig.append(
                 {
                     table: {
-                    "primaryKey": tables[table].prim_key, #"schema": table.get_schema(), Add later
-                    "columns": [ {"name": col.name,"type": str(col.type.__name__), "mods": col.mods } for k,col in tables[table].columns.items() ]
+                        "primaryKey": tables[table].prim_key,
+                        "foreignKeys": tables[table].fKeys,
+                        "columns": [{"name": col.name,"type": str(col.type.__name__), 
+                        "mods": col.mods } for k,col in tables[table].columns.items() ]
                     }
                 }
             ) 
@@ -27,7 +29,7 @@ def run(server):
         if request.method == 'GET':
             return db_table_get(database, table)
         if request.method == 'PUT' or request.method == 'POST':
-            return db_table_insert(database, table)
+            return db_table_put_post(database, table)
 
     def db_table_get(database, table):
         return server.actions['select'](database, table)
@@ -62,7 +64,7 @@ def run(server):
     @server.route('/db/<database>/table/<table>/config')
     @server.is_authenticated('local')
     def db_get_table_config(database,table):
-        return get_table_func(database, table)
+        return get_table_config(database, table)
     def get_table_config(database,table):
         message, rc = server.check_db_table_exist(database,table)
         if not rc == 200:
@@ -80,14 +82,13 @@ def run(server):
         }
         return response, 200
             
-    server.get_table_func = get_table_func
+    server.get_table_func = get_table_config
 
     @server.route('/db/<database>/table/<table>/create', methods=['POST'])
     @server.is_authenticated('local')
     def database_table_create(database, table):
         newTableConfig = request.get_json()
         return create_table_func(database, newTableConfig)
-
 
     @server.route('/db/<database>/table/<table>/sync', methods=['POST'])
     @server.is_authenticated('local')
@@ -134,20 +135,14 @@ def run(server):
                         return {
                             "error": log.error(f"""invalid type {col['type']} provided in column {col['name']}. use: {convert}""")
                             }, 400
-                    columns.append(
-                        (
-                            col['name'],
-                            convert[col['type']],
-                            col['mods']
-                        )
-                    )
+                    columns.append((col['name'], convert[col['type']], col['mods']))
                 colNames = [c[0] for c in columns]
                 if not "primaryKey" in tableConfig[tableName]:
                     return {'error': log.error(f'missing new table config "primaryKey": <column_name>')},  400
                 if not tableConfig[tableName]["primaryKey"] in colNames:
                     error = f'provided primaryKey {tableConfig[tableName]["primaryKey"]} is not a column with "columns": {colNames}'
                     return {'error': log.error(error)}, 400
-                if 'fKeys' in tableConfig[tableName]:
+                if 'foreignKeys' in tableConfig[tableName]:
                     for localKey, forignKey in tableConfig[tableName]['fKeys'].items():
                         if not localKey in colNames:
                             return {"error": log.error(f"localKey {localKey} is not a valid column")}, 400
