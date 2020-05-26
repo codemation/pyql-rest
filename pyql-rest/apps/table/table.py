@@ -151,7 +151,7 @@ def run(server):
                     tableName, 
                     columns,
                     tableConfig[tableName]["primaryKey"],
-                    fKeys=tableConfig[tableName]["fKeys"]
+                    fKeys=tableConfig[tableName]["foreignKeys"]
                     )
                 server.db_check(database)
                 return {"message": log.warning(f"""table {tableName} created successfully """)}, 200
