@@ -51,7 +51,8 @@ def run(server):
                     'uuid': dbuuid
                 },
                 "tables": tables
-            }
+            },
+            "consisteny": tables # TODO - add to environ variable
         }
         if 'PYQL_CLUSTER_JOIN_TOKEN' in os.environ and not os.environ['PYQL_CLUSTER_ACTION'] == 'test':
             joinClusterJob['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
