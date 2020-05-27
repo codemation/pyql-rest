@@ -62,8 +62,6 @@ def run(server):
                     log.warning(f"##cache {action} response {r} rc {rc}")
                 except Exception as e:
                     r, rc = log.exception(f"exception encountered during cache {action} {repr(e)}"), 400
-                
-                
                 delTxn = cache.delete(
                     where={'id': txnId}
                 )
@@ -78,7 +76,7 @@ def run(server):
                             'tableName': table
                         }
                     }
-                    server.data['cluster'].tables['pyql'].update(
+                    server.data['pyql'].tables['pyql'].update(
                             **setParams['set'],
                             where=setParams['where']
                     )
