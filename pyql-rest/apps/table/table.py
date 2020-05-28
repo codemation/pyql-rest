@@ -153,5 +153,7 @@ def run(server):
                     tableConfig[tableName]["primaryKey"],
                     fKeys=tableConfig[tableName]["foreignKeys"]
                     )
-                server.db_check(database)
+                tables = server.db_check(database)['tables']
+                if not tableName in tables:
+                    return {"message": "could not create table at this time, perhaps a parent table constraint prevented creation"}, 500
                 return {"message": log.warning(f"""table {tableName} created successfully """)}, 200

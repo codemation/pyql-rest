@@ -12,11 +12,12 @@ def run(server):
                 log.info(f"db_check - found {r}")
         else:    
             tables = db.get('show tables')
+            tables = [t[0] for t in tables]
             log.info(f"db_check result: {tables}")
             for table in tables:
-                if not table[0] in server.data[database].tables:
+                if not table in server.data[database].tables:
                     server.data[database].load_tables()
-        return {"messages": log.info(f"{database} status ok"), "tables": list(server.data[database].tables.keys())}, 200
+        return {"messages": log.info(f"{database} status ok"), "tables": tables}
     server.db_check = db_check
     
     def internal_job_add(job):
@@ -63,6 +64,6 @@ def run(server):
     @server.is_authenticated('local')
     def internal_db_status(database):
         if database in server.data:
-            return db_check(database)
+            return db_check(database), 200
         else:
             return {"status": 404, "message": f"database with name {database} not found"}, 404
