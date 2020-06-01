@@ -101,6 +101,10 @@ def run(server):
             server.db_check(database)
         if not table in server.data[database].tables:
             return {'message': log.error(f"{table} not found in database {database}")}, 400
+        tables = server.db_check(database)['tables']
+            if not tableName in tables:
+                return {'message': log.error(f"{table} not found in database {database}")}, 400
+        log.warning(f"sync_table_func tables {tables}")
         dataToSync = request.get_json()
         tableConfig, _ = get_table_config(database, table)
         server.data[database].run(f'drop table {table}')
