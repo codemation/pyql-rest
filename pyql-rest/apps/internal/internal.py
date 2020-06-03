@@ -10,8 +10,14 @@ def run(server):
             tables = [t[0] for t in result]
             for r in result:
                 log.info(f"db_check - found {r}")
-        else:    
-            tables = db.get('show tables')
+        else:
+            try:
+                tables = db.get('show tables')
+            except Exception as e:
+                log.exception("error list tables")
+                log.warning("trying to re-attach databases")
+                server.attach_databases()
+                tables = db.get('show tables')
             tables = [t[0] for t in tables]
             log.info(f"db_check result: {tables}")
             for table in tables:

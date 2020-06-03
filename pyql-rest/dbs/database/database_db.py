@@ -60,6 +60,8 @@ def run(server):
         return attach(config)
 
     @server.route('/internal/dbs/attach')
+    def internal_attach_databases():
+        return attach_database()
     def attach_databases():
         config, rc = get_db_config()
         if rc == 500:
@@ -78,6 +80,7 @@ def run(server):
             response['results'].append({f'{database}': f'{result}'})
         setup.attach_tables(server)
         return response, 200
+    server.attach_databases = attach_databases
     
     response = attach_databases()
     log.warning(response)
