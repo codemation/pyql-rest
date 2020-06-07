@@ -11,12 +11,10 @@ def run(server):
 
     @server.route('/db/<database>/cache/<table>/txn/<action>', methods=['POST'])
     @server.is_authenticated('local')
-    @server.trace
     def cache_txn_manage(database, table, action, trans=None, **kw):
         """
             method for managing txns - canceling / commiting
         """
-        trace = kw['trace']
         transaction = request.get_json() if trans == None else trans
         if 'txn' in transaction:
             txnId = transaction['txn']
@@ -31,11 +29,11 @@ def run(server):
                         where={'tableName': table}
                     )
                     if not txnId in {tx['id'] for tx in txns}:
-                        return {"message": trace.error(f"{txnId} does not exist in cache")}, 500
+                        return {"message": log.error(f"{txnId} does not exist in cache")}, 500
                     if len(txns) == 1:
                         if not txns[0]['id'] == txnId:
                             warning = f"txn with id {txnId} does not exist for {database} {table}"
-                            return {'warning': trace.warning(warning)}, 500
+                            return {'warning': log.warning(warning)}, 500
                         # txnId is only value inside
                         tx = txns[0]
                         break
@@ -48,13 +46,13 @@ def run(server):
                                 break
                             if waitTime > txnMaxWaitTimeInSec:
                                 warning = f"timeout of {waitTime} reached while waiting to commit {txnId} for {database} {table}, waiting on {txns[:ind]}"
-                                trace.warning(warning)
-                                trace.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {txnMaxWaitTimeInSec} reached")
+                                log.warning(warning)
+                                log.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {txnMaxWaitTimeInSec} reached")
                                 cache.delete(where={'id': txns[0]['id']})
                                 break
                             break
                     if tx == None:
-                        trace.warning(f"txnId {txnId} is behind txns {txns[:ind]} - waiting {waitTime} to retry")
+                        log.warning(f"txnId {txnId} is behind txns {txns[:ind]} - waiting {waitTime} to retry")
                         time.sleep(waitInterval)
                         waitTime+=waitInterval 
                         # waitInterval scales up to txnMaxWaitIntervalInSec
@@ -65,15 +63,15 @@ def run(server):
                     break
                 # Should not have broken out of loop here without a tx
                 if tx == None:
-                    trace.error("tx is None, this should not hppen")
+                    log.error("tx is None, this should not hppen")
                     return {"error": "tx was none"}, 500
                 tx = cache.select('type','txn',
                         where={'id': txnId})[0]
                 try:
                     r, rc = server.actions[tx['type']](database, table, tx['txn'])
-                    trace.warning(f"##cache {action} response {r} rc {rc}")
+                    log.warning(f"##cache {action} response {r} rc {rc}")
                 except Exception as e:
-                    r, rc = trace.exception(f"Exception when performing cache {action}"), 500
+                    r, rc = log.exception(f"Exception when performing cache {action}"), 500
                 
                 delTxn = cache.delete(
                     where={'id': txnId}
