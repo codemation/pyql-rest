@@ -8,7 +8,7 @@ echo "1. restarting / recreating mysql container on port "$5
 #ip=$(ifconfig | egrep 'netmask' | awk '{print $2}' | tail -1)
 ip=$4
 
-echo $6 | grep 'init'
+echo $7 | grep 'init'
 if [ $? -eq 0 ]
 then
     echo "1.2  create tables & saturate with test data"
@@ -32,7 +32,7 @@ env1="-e PYQL_CLUSTER_NAME=$6 -e PYQL_CLUSTER_ACTION=$action -e PYQL_CLUSTER_TAB
 env2="-e PYQL_CLUSTER_JOIN_TOKEN=$8"
 env3="-e DB_USER=josh -e DB_PASSWORD=abcd1234 -e DB_HOST=$ip -e DB_PORT=$5 -e DB_NAMES=joshdb -e DB_TYPE=mysql"
 
-echo $6 | grep 'rejoin' > /dev/null 
+echo $7 | grep 'rejoin' > /dev/null 
 if [ $? -eq 0 ]
 then
     echo "rejoin called - will try using existing volume path"
