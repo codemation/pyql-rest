@@ -29,7 +29,7 @@ docker build docker_pyql_rest/ -t joshjamison/pyql-rest:$1 $9
 action=$(echo $7 | grep 'join' > /dev/null && echo -n 'join' || echo -n 'init')
 env="-e PYQL_TYPE=K8S -e PYQL_VOLUME_PATH=/mnt/pyql-rest -e PYQL_PORT=$2 -e PYQL_CLUSTER_SVC=$3 -e PYQL_HOST=$ip" 
 env1="-e PYQL_CLUSTER_NAME=$6 -e PYQL_CLUSTER_ACTION=$action -e PYQL_CLUSTER_TABLES=ALL -e PYQL_DEBUG=Enabled"
-env2="-e PYQL_CLUSTER_JOIN_TOKEN=$7"
+env2="-e PYQL_CLUSTER_JOIN_TOKEN=$8"
 env3="-e DB_USER=josh -e DB_PASSWORD=abcd1234 -e DB_HOST=$ip -e DB_PORT=$5 -e DB_NAMES=joshdb -e DB_TYPE=mysql"
 
 echo $6 | grep 'rejoin' > /dev/null 
