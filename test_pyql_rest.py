@@ -97,7 +97,7 @@ class rest:
                 os.system(f'docker container stop pyql-rest-{restPort}')
                 time.sleep(30)
         cache = '--no-cache' if action == 'init' else ''
-        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {restPort} {clusterHost}:{clusterPort} {restDbPort} {cluster} {action} {token} {cache}'
+        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {restPort} {clusterHost}:{clusterPort} {clusterHost} {restDbPort} {cluster} {action} {token} {cache}'
         print(f"running cmd: {cmd}")
         os.system(cmd)
     def pull_join_token(self):
