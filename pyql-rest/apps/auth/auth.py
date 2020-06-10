@@ -133,7 +133,7 @@ def run(server):
     # check for existing local pyql service user, create if not exists
     pyqlServiceUser = server.data['pyql'].tables['authlocal'].select('*', where={'username': 'pyql'})
 
-    if not len(pyqlServiceUser) > 0:
+    if len(pyqlServiceUser) == 0:
         serviceId = str(uuid.uuid1())
         server.data['pyql'].tables['authlocal'].insert(**{
             'id': serviceId,
@@ -143,6 +143,19 @@ def run(server):
         log.warning(f"created new service account with id {serviceId}")
         serviceToken = create_auth_token(serviceId, 'never', 'LOCAL')
         log.warning(f"created service account token {serviceToken}")
+        # create user - if type stand-alone
+        if os.environ.get('PYQL_TYPE') == 'STANDALONE':
+            for var in ['PYQL_USER', 'PYQL_PASSWORD']:
+                credsProvided = True
+                if os.environ.get(var) == None:
+                    credsProvided = False
+            if credsProvided:
+                server.data['pyql'].tables['authlocal'].insert(**{
+                    'id': str(uuid.uuid1()),
+                    'username': os.environ.get('PYQL_USER'), 
+                    'password': os.environ.get('PYQL_PASSWORD'),
+                    'type': 'user'
+                })
     else:
         log.warning(f"found existing service account")
         serviceToken = create_auth_token(
