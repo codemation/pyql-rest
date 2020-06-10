@@ -14,6 +14,9 @@ WORKDIR /pyql-rest/pyql-rest/
 RUN cp /pyql-rest/pyql-rest/sites-available-pyql-rest /etc/nginx/sites-available/ && \
     ln -s /etc/nginx/sites-available/sites-available-pyql-rest /etc/nginx/sites-enabled
 
+ENV PYQL_VOLUME_PATH="/mnt/pyql-rest"
+ENV PYQL_TYPE=K8S
+
 EXPOSE 80
 
 CMD ["./startserver.sh"]
