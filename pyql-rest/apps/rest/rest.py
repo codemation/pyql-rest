@@ -54,7 +54,7 @@ def run(server):
                 "consistency": tableToJoin # TODO - add to environ variable
             }
         }
-        if 'PYQL_CLUSTER_JOIN_TOKEN' in os.environ and not os.environ['PYQL_CLUSTER_ACTION'] == 'test':
+        if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' or not os.environ.get('PYQL_TYPE') == 'STANDALONE':
             joinClusterJob['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
             server.internal_job_add(joinClusterJob)
         @server.route('/pyql/node')
