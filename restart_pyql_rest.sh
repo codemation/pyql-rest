@@ -1,14 +1,19 @@
 #!/bin/bash
 #Usage ./restart_pyql_rest.sh <tag> <local-port> <clusterhost:port> <db-host> <db-port> <cluster> <init|join|rejoin|test> [join token]  [--no-cache]
 
-#restart mysql db endpoint
-echo "1. restarting / recreating mysql container on port "$5
-./docker_db/start_db.sh mysql pyql-rest-$2 $5 $7
+TAG=$1
+LOCAL_PORT=$2
+CLUSTER_HOST_PORT=$3
+DB_HOST=$4
+DB_PORT=$5
+CLUSTER_NAME=$6
+CLUSTER_ACTION=$7
+JOIN_TOKEN=$8
 
-#ip=$(ifconfig | egrep 'netmask' | awk '{print $2}' | tail -1)
-ip=$4
+echo "1. restarting / recreating mysql container on port "$DB_PORT
+./docker_db/start_db.sh mysql pyql-rest-$LOCAL_PORT $DB_PORT $CLUSTER_ACTION
 
-echo $7 | grep 'init'
+echo $CLUSTER_ACTION | grep 'init'
 if [ $? -eq 0 ]
 then
     echo "1.2  create tables & saturate with test data"
@@ -16,37 +21,34 @@ then
     # create tables & saturate with test data
     source pyql-rest-env/bin/activate
     #db['DB_HOST'], db['DB_PORT'], db['DB_NAME'], db['DB_TYPE'], db['DB_USER'], db['DB_PASSWORD']
-    python test.py $ip $5 joshdb mysql josh abcd1234
+    python test.py $DB_HOST $DB_PORT joshdb mysql josh abcd1234
 fi
 
-
-
-#./restart_pyql_rest.sh dev0.11 8091 192.168.3.33:8090 data join eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImQzYjIzNDcyLTcxZDQtMTFlYS1hMzIwLTg1YTA3N2E4MTY3YV9qb2luIiwiZXhwaXJhdGlvbiI6ImpvaW4iLCJjcmVhdGVUaW1lIjoxNTg1NDk2OTk4LjMwNDUyNDJ9.LrU0EvPV1Js8GFtvd86SRMzy2g9i01CyxN9zY0AdhRA
-echo "2. removin existing pyql-rest containers & rebuilding image:tag pyql-rest:$1"
-docker container rm pyql-rest-$2 $(docker container stop pyql-rest-$2)
+echo "2. removin existing pyql-rest containers & rebuilding image:tag pyql-rest:$TAG"
+docker container rm pyql-rest-$2 $(docker container stop pyql-rest-$LOCAL_PORT)
 docker build docker_pyql_rest/ -t joshjamison/pyql-rest:$1 $9
 
-action=$(echo $7 | grep 'join' > /dev/null && echo -n 'join' || echo -n 'init')
-env="-e PYQL_TYPE=K8S -e PYQL_VOLUME_PATH=/mnt/pyql-rest -e PYQL_PORT=$2 -e PYQL_CLUSTER_SVC=$3 -e PYQL_HOST=$ip" 
-env1="-e PYQL_CLUSTER_NAME=$6 -e PYQL_CLUSTER_ACTION=$action -e PYQL_CLUSTER_TABLES=ALL -e PYQL_DEBUG=Enabled"
-env2="-e PYQL_CLUSTER_JOIN_TOKEN=$8"
-env3="-e DB_USER=josh -e DB_PASSWORD=abcd1234 -e DB_HOST=$ip -e DB_PORT=$5 -e DB_NAMES=joshdb -e DB_TYPE=mysql"
+action=$(echo $CLUSTER_ACTION | grep 'join' > /dev/null && echo -n 'join' || echo -n 'init')
+env="-e PYQL_TYPE=K8S -e PYQL_VOLUME_PATH=/mnt/pyql-rest -e PYQL_PORT=$LOCAL_PORT -e PYQL_CLUSTER_SVC=$CLUSTER_HOST_PORT -e PYQL_HOST=$DB_HOST" 
+env1="-e PYQL_CLUSTER_NAME=$CLUSTER_NAME -e PYQL_CLUSTER_ACTION=$action -e PYQL_CLUSTER_TABLES=ALL -e PYQL_DEBUG=Enabled"
+env2="-e PYQL_CLUSTER_JOIN_TOKEN=$JOIN_TOKEN"
+env3="-e DB_USER=josh -e DB_PASSWORD=abcd1234 -e DB_HOST=$DB_HOST -e DB_PORT=$DB_PORT -e DB_NAMES=joshdb -e DB_TYPE=mysql"
 
-echo $7 | grep 'rejoin' > /dev/null 
+echo $CLUSTER_ACTION | grep 'rejoin' > /dev/null 
 if [ $? -eq 0 ]
 then
     echo "rejoin called - will try using existing volume path"
 else
     echo 'cleaning up existing volume path'
-    sudo rm -rf $(pwd)/pyql-rest-$2-vol/
+    sudo rm -rf $(pwd)/pyql-rest-$LOCAL_PORT-vol/
 
     # check & cleanup 
-    ls $(pwd)/pyql-rest-$2-vol/ && sudo rm -rf $(pwd)/pyql-rest-$2-vol/ || echo "cleaned up existing pyql-rest volume"
+    ls $(pwd)/pyql-rest-$LOCAL_PORT-vol/ && sudo rm -rf $(pwd)/pyql-rest-$LOCAL_PORT-vol/ || echo "cleaned up existing pyql-rest volume"
 
     # creat new volume dir
-    mkdir $(pwd)/pyql-rest-$2-vol
+    mkdir $(pwd)/pyql-rest-$LOCAL_PORT-vol
 fi
 
 
-echo "3. starting pyql rest container pyql-rest-$2"
-docker container run --name pyql-rest-$2 $env $env1 $env2 $env3 -p $2:$2 -v $(pwd)/pyql-rest-$2-vol:/mnt/pyql-rest -d joshjamison/pyql-rest:$1
+echo "3. starting pyql rest container pyql-rest-$LOCAL_PORT"
+docker container run --name pyql-rest-$LOCAL_PORT $env $env1 $env2 $env3 -p $LOCAL_PORT:$LOCAL_PORT -v $(pwd)/pyql-rest-$LOCAL_PORT-vol:/mnt/pyql-rest -d joshjamison/pyql-rest:$1
