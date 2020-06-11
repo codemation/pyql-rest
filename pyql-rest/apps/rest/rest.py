@@ -36,7 +36,7 @@ def run(server):
                         tb: server.get_table_func(db, tb)[0]
                     })
         print(f"#REST tables {tables}")
-        if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' or not os.environ.get('PYQL_TYPE') == 'STANDALONE':
+        if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' and not os.environ.get('PYQL_TYPE') == 'STANDALONE':
             joinClusterJob = {
                 "job": f"{os.environ['HOSTNAME']}joinCluster",
                 "jobType": "cluster",
