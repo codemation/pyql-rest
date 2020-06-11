@@ -11,7 +11,9 @@ def run(server):
         config=dict()
         if 'PYQL_TYPE' in os.environ:
             if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
-                dbLocation = os.environ['PYQL_VOLUME_PATH']
+                dbLocation = os.environ.get('PYQL_VOLUME_PATH')
+                if dbLocation == None:
+                    dbLocation = '/mnt/pyql-rest'
                 config['database'] = f'{dbLocation}/pyql'
 
         else:
