@@ -6,7 +6,7 @@ def run(server):
     dbConnnectRetries = 10
     dbConnnectRetryDelayInSec = 5
     
-    if os.environ['PYQL_CLUSTER_ACTION'] == 'test':
+    if os.environ.get('PYQL_CLUSTER_ACTION') == 'test':
         os.environ['DB_USER'] = 'josh'
         os.environ['DB_PASSWORD'] = 'abcd1234'
         os.environ['DB_HOST'] = '192.168.3.33'
