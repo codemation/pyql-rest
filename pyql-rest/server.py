@@ -30,7 +30,7 @@ if __name__ == '__main__':
         main(port)
 else:
     # For loading when triggered by uWSGI
-    if os.environ['PYQL_TYPE'] in ['K8s', 'STANDALONE']:
+    if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
         os.environ['PYQL_NODE'] = socket.gethostbyname(socket.getfqdn())
     import setup
     setup.run(app)
