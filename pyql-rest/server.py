@@ -26,10 +26,11 @@ if __name__ == '__main__':
         os.environ['PYQL_CLUSTER_NAME'] = clusterName
         os.environ['PYQL_CLUSTER_ACTION'] = action
         os.environ['PYQL_CLUSTER_TABLES'] = tables
+        os.environ['PYQL_CLUSTER_JOIN_TOKEN'] = token
         main(port)
 else:
     # For loading when triggered by uWSGI
-    if os.environ['PYQL_TYPE'] == 'K8S':
+    if os.environ['PYQL_TYPE'] in ['K8s', 'STANDALONE']:
         os.environ['PYQL_NODE'] = socket.gethostbyname(socket.getfqdn())
     import setup
     setup.run(app)
