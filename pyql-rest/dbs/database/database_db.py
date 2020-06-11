@@ -51,7 +51,7 @@ def run(server):
                 time.sleep(dbConnnectRetryDelayInSec)
                 tryCount+=1
                 continue
-        log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")
+        return {"error": log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")}, 500
         
     @server.route('/internal/db/<database>/attach')
     def attach_database(database):
