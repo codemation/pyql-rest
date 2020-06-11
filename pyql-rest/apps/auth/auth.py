@@ -21,7 +21,7 @@ def run(server):
     def decode_password(encodedPw, auth):
         return decode(encodedPw, auth)
     def validate_user_pw(user, pw):
-        userSel = server.clusters.auth.select('id', 'password', where={'username': user})
+        userSel = server.data['pyql'].tables['authlocal'].select('id', 'password', where={'username': user})
         if len(userSel) == 0:
             return {"message": f"user / pw combination does not exist or is incorrect"}, 401
         log.warning(f"checking auth for {userSel}")
@@ -153,7 +153,7 @@ def run(server):
                 server.data['pyql'].tables['authlocal'].insert(**{
                     'id': str(uuid.uuid1()),
                     'username': os.environ.get('PYQL_USER'), 
-                    'password': os.environ.get('PYQL_PASSWORD'),
+                    'password': encode_password(os.environ.get('PYQL_PASSWORD')),
                     'type': 'user'
                 })
     else:
