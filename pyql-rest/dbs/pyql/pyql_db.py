@@ -10,7 +10,7 @@ def run(server):
     def pyql_attach():
         config=dict()
         if 'PYQL_TYPE' in os.environ:
-            if os.environ['PYQL_TYPE'] == 'K8S':
+            if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
                 dbLocation = os.environ['PYQL_VOLUME_PATH']
                 config['database'] = f'{dbLocation}/pyql'
 
