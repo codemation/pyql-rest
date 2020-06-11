@@ -23,7 +23,7 @@ def run(server):
         nodeId = dbuuid
         tables = []
         tableToJoin = []
-        if os.environ['PYQL_CLUSTER_ACTION'] == 'init':
+        if os.environ.get('PYQL_CLUSTER_ACTION') == 'init':
             if os.environ['PYQL_CLUSTER_TABLES'] == 'ALL':
                 tableToJoin = [tb for tb in server.data[db].tables]
             else:
@@ -36,25 +36,24 @@ def run(server):
                         tb: server.get_table_func(db, tb)[0]
                     })
         print(f"#REST tables {tables}")
-        
-        joinClusterJob = {
-            "job": f"{os.environ['HOSTNAME']}joinCluster",
-            "jobType": "cluster",
-            "method": "POST",
-            "path": f"/cluster/{os.environ['PYQL_CLUSTER_NAME']}/join",
-            "data": {
-                "name": os.environ['HOSTNAME'],
-                "path": f"{os.environ['PYQL_NODE']}:{os.environ['PYQL_PORT']}",
-                "token": server.env['PYQL_LOCAL_SERVICE_TOKEN'],
-                "database": {
-                    'name': db,
-                    'uuid': dbuuid
-                },
-                "tables": tables,
-                "consistency": tableToJoin # TODO - add to environ variable
-            }
-        }
         if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' or not os.environ.get('PYQL_TYPE') == 'STANDALONE':
+            joinClusterJob = {
+                "job": f"{os.environ['HOSTNAME']}joinCluster",
+                "jobType": "cluster",
+                "method": "POST",
+                "path": f"/cluster/{os.environ['PYQL_CLUSTER_NAME']}/join",
+                "data": {
+                    "name": os.environ['HOSTNAME'],
+                    "path": f"{os.environ['PYQL_NODE']}:{os.environ['PYQL_PORT']}",
+                    "token": server.env['PYQL_LOCAL_SERVICE_TOKEN'],
+                    "database": {
+                        'name': db,
+                        'uuid': dbuuid
+                    },
+                    "tables": tables,
+                    "consistency": tableToJoin # TODO - add to environ variable
+                }
+            }
             joinClusterJob['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
             server.internal_job_add(joinClusterJob)
         @server.route('/pyql/node')
