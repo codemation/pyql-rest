@@ -3,7 +3,7 @@ import os
 def get_db():
     config=dict()
     if 'PYQL_TYPE' in os.environ:
-        if os.environ['PYQL_TYPE'] == 'K8S':
+        if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
             dbLocation = os.environ['PYQL_VOLUME_PATH']
             config['database'] = f'{dbLocation}/pyql'
     else:
