@@ -16,6 +16,7 @@ RUN cp /pyql-rest/pyql-rest/sites-available-pyql-rest /etc/nginx/sites-available
 
 ENV PYQL_VOLUME_PATH="/mnt/pyql-rest"
 ENV PYQL_TYPE=K8S
+ENV PYQL_PORT=80
 
 EXPOSE 80
 

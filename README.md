@@ -20,6 +20,7 @@ Note: Using a type 'sqlite3' database only requires PYQL_HOST, DB_NAMES & DB_TYP
 Standalone instances require a PYQL username / password used for authenticating the API requests & administering REST endpoint 
 - PYQL_USER - user which will administer pyql rest endpoint or simply access rest endpoint data 
 - PYQL_PASSWORD - password for PYQL_USER
+- PYQL_TYPE - default is K8s, use PYQL_TYPE=STANDALONE for standalone instances
 
 
 ### Quick Start - Standalone - MYSQL
@@ -30,7 +31,7 @@ Standalone instances require a PYQL username / password used for authenticating 
 - LOCAL_PORT - local port mapped to container port - can often be the same port if not in use already
 
 
-        env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_USER=pyql_admin -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=mysql"
+        env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_USER=pyql_admin -e PYQL_TYPE=STANDALONE -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=mysql"
 
         env2="-e DB_HOST=192.168.1.20 -e DB_PORT=3306 -e DB_NAMES=company -e DB_USER=db_admin -e DB_PASSWORD=$(echo -n $(cat ~/.secret))"
     
