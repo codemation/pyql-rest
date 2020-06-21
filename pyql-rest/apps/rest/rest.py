@@ -44,7 +44,7 @@ def run(server):
                 "path": f"/cluster/{os.environ['PYQL_CLUSTER_NAME']}/join",
                 "data": {
                     "name": os.environ['HOSTNAME'],
-                    "path": f"{os.environ['PYQL_NODE']}:{os.environ['PYQL_PORT']}",
+                    "path": f"{os.environ['PYQL_HOST']}:{os.environ['PYQL_PORT']}",
                     "token": server.env['PYQL_LOCAL_SERVICE_TOKEN'],
                     "database": {
                         'name': db,
