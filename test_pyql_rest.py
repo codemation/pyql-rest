@@ -1,12 +1,15 @@
 import os, unittest, json, requests, time, random, base64, subprocess
 
 class rest:
-    def __init__(self):
+    def __init__(self, config=None):
         self.steps = 0
         # loads 
         # {'clusterPort': 8090, 'clusterIp': '192.168.3.33', 'initAdminPw': 'YWRtaW46YWJjZDEyMzQ='}
-        with open('test_pyql_rest_config.json', 'r') as config:
-            self.config = json.loads(config.read())
+        if config == None:
+            with open('test_pyql_rest_config.json', 'r') as config:
+                self.config = json.loads(config.read())
+        else:
+            self.config = config
         self.session = requests.Session()
         self.cluster = cluster(self)
         self.step = self.cluster.step
@@ -71,10 +74,11 @@ class rest:
             if cluster == 'index':
                 continue
             self.db_simulate(cluster, simulateDuration)
-    def expand_data_cluster(self, cluster, token=None, port=None):
+    def expand_data_cluster(self, cluster, db_host=None, token=None, port=None):
         clusterHost = self.cluster.config['clusterIp']
         clusterPort = self.cluster.config['clusterPort']
         token = self.joinToken if token == None else token
+        dbHost = clusterHost if db_host == None else db_host
         # #Usage ./restart_pyql_rest.sh <tag> <local-port> <clusterhost:port> <db-port> <cluster> <init|join|test> [join token]
         if port == None:
             restPort = 8190 + self.cluster.clusters['index']
@@ -97,7 +101,7 @@ class rest:
                 os.system(f'docker container stop pyql-rest-{restPort}')
                 time.sleep(30)
         cache = '--no-cache' if action == 'init' else ''
-        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {restPort} {clusterHost}:{clusterPort} {clusterHost} {restDbPort} {cluster} {action} {token} {cache}'
+        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {restPort} {clusterHost}:{clusterPort} {dbHost} {restDbPort} {cluster} {action} {token} {cache}'
         print(f"running cmd: {cmd}")
         os.system(cmd)
     def pull_join_token(self):
@@ -331,7 +335,6 @@ def probe(path, method='GET', data=None, timeout=20.0, auth=None, **kw):
         return r.text, r.status_code
 
 #testCluster = cluster()
-testRest = rest()
 
 
 def test_expand_cluster(count):
@@ -382,7 +385,11 @@ def sync_job_check():
         time.sleep(5)
     assert lastCount == 0, f"waited too long on a syncjobs job to finish, {jobs}"
 
-class PyqlCluster(unittest.TestCase):
+class PyqlRest(unittest.TestCase):
+    try:
+        testRest = rest()
+    except Exception:
+        print("error preparing class PyqlRest for unittest")
     def test_01_create_user_and_setup_auth(self):
         # Register new user - /auth/user/register
         result, rc = testRest.register_user() # This will return error 400 if already exists
