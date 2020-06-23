@@ -24,7 +24,7 @@ def run(server):
         tables = []
         tableToJoin = []
         if os.environ.get('PYQL_CLUSTER_ACTION') == 'init':
-            if os.environ['PYQL_CLUSTER_TABLES'] == 'ALL':
+            if os.environ['PYQL_CLUSTER_TABLES'].upper() == 'ALL':
                 tableToJoin = [tb for tb in server.data[db].tables]
             else:
                 tableToJoin = [tb for tb in os.environ['PYQL_CLUSTER_TABLES'].split(',')] #TODO - Add check for env during setup
