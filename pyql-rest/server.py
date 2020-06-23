@@ -33,7 +33,7 @@ else:
     if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
         os.environ['PYQL_NODE'] = socket.gethostbyname(socket.getfqdn())
         if os.environ['PYQL_TYPE'] == 'K8S':
-            os.environ['PYQL_HOST'] == socket.gethostbyname(socket.getfqdn())
+            os.environ['PYQL_HOST'] = socket.gethostbyname(socket.getfqdn())
 
     import setup
     setup.run(app)
