@@ -87,7 +87,7 @@ def run(server):
                             'tableName': table
                         }
                     }
-                    server.data['cluster'].tables['pyql'].update(
+                    server.data['pyql'].tables['pyql'].update(
                             **setParams['set'],
                             where=setParams['where']
                     )
@@ -101,7 +101,7 @@ def run(server):
     @server.is_authenticated('local')
     def cache_action(database, table, action,txuuid):
         transaction = request.get_json()
-        server.data[database].tables['cache'].insert(**{
+        server.data['pyql'].tables['cache'].insert(**{
             'id': txuuid,
             'tableName': table,
             'type': action,
