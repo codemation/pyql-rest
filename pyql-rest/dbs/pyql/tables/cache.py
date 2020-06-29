@@ -1,8 +1,8 @@
 def db_attach(server):
-    db = server.data['pyql']
     # cache table should reset each time an instance is started / restarted
     def reset_cache():
-        server.data['pyql'].run(f'drop table cache')
+        db = server.data['pyql']
+        db.run(f'drop table cache')
         db.create_table(
         'cache', [
             ('id', str, 'UNIQUE NOT NULL'), # uuid of cached txn
