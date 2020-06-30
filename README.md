@@ -30,7 +30,6 @@ Standalone instances require a PYQL username / password used for authenticating 
 
 - LOCAL_PORT - local port mapped to container port - can often be the same port if not in use already
 
-
         env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_USER=pyql_admin -e PYQL_TYPE=STANDALONE -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=mysql"
 
         env2="-e DB_HOST=192.168.1.20 -e DB_PORT=3306 -e DB_NAMES=company -e DB_USER=db_admin -e DB_PASSWORD=$(echo -n $(cat ~/.secret))"
@@ -45,7 +44,7 @@ Standalone instances require a PYQL username / password used for authenticating 
 
 - LOCAL_PORT - local port mapped to container port - can often be the same port if not in use already
 
-        env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_USER=pyql_admin -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=sqlite3 -e DB_NAMES=company "
+        env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_TYPE=STANDALONE -e PYQL_USER=pyql_admin -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=sqlite3 -e DB_NAMES=company "
     
         docker container run --name pyql-rest-mysql $env1 -p $LOCAL_PORT:$PYQL_PORT -v $LOCAL_PATH:/mnt/pyql-rest -d joshjamison/pyql-rest:latest
 
@@ -62,7 +61,25 @@ A rest endpoint can be configured to join a collection of other rest endpoints (
 
 Note: Instances may be started via docker run or within a kubernetes deployment using these variables. PYQL_HOST address must be a reachable by the pyql-cluster for an instance to correctly join / init. 
 
-See examples in See  [pyql-rest k8s](./k8s)
+Example:
+
+        env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_USER=pyql_admin -e PYQL_PASSWORD='abcd1234' -e DB_TYPE=mysql"
+
+        env2="-e DB_HOST=192.168.1.20 -e DB_PORT=3306 -e DB_NAMES=company -e DB_USER=db_admin -e DB_PASSWORD=$(echo -n $(cat ~/.secret))"
+
+        env3="-e PYQL_CLUSTER_SVC=pyql-cluster.domain.local -e PYQL_CLUSTER_NAME=data PYQL_CLUSTER_ACTION=init "
+
+        env4="-e PYQL_CLUSTER_TABLES=ALL -e PYQL_CLUSTER_JOIN_TOKEN=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpZCI6ImU3MjRjODQyLWIzNDQtMTFlYS05NjgxLTYyOGNhNTQ1MTNjYyIsImV4cGlyYXRpb24iOiJqb2luIiwiY3JlYXRlVGltZSI6MTU5Mjc0Njk5Ni4xNTQ5Mjk2fQ.E-G5qPpT2hqTjp8J7tq1ZXZDE0GG6wvu_YJgmOtYLLE"
+
+        docker container run --name pyql-rest-mysql $env1 $env2 $env3 $env4 -p $LOCAL_PORT:$PYQL_PORT -v $LOCAL_PATH:/mnt/pyql-rest -d joshjamison/pyql-rest:latest
+
+Special Considerations:
+- DOCKER ONLY - PYQL_HOST must be reachable by all pyql-cluster endpoints, if pyql cluster spans multiple subnets consider use of an external address.
+
+
+K8s statefulSets & Deployments for pyql-clusters
+
+See examples in See  [pyql-rest k8s](./k8s) and [pyql-cluster](https://github.com/codemation/pyql-cluster)
 
 ## PYQL REST - API REFERENCE
 
@@ -73,7 +90,7 @@ See examples in See  [pyql-rest k8s](./k8s)
 | Sync / Load Table | POST | /db/{database}/table/{table}/sync | 'application/json' | {"data":[{"afterHours":true,"date":"2006-01-05","order_num":2,"price":35.16,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}},{"afterHours":true,"date":"2006-01-06","order_num":3,"price":35.12,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}}]}
 | List All Tables config | GET | /db/{database}/tables' | - | - | 'application/json' | {"tables": [{"stocks":{"columns":[{"mods":"NOT NULL AUTO_INCREMENT","name":"order_num","type":"int"},{"mods":"","name":"date","type":"str"},{"mods":"","name":"trans","type":"str"},{"mods":"","name":"symbol","type":"str"},{"mods":"DEFAULT NULL","name":"qty","type":"int"},{"mods":"DEFAULT NULL","name":"price","type":"float"},{"mods":"DEFAULT NULL","name":"afterHours","type":"bool"}],"foreignKeys":null,"primaryKey":"order_num"}} | {"message": "table created successfuly"}, {"keystore":{"columns":[{"mods":"NOT NULL","name":"env","type":"str"},{"mods":"","name":"val","type":"str"}],"foreignKeys":null,"primaryKey":"env"}}]}
 | Get All Rows | GET | /db/{database}/table/{table} | - | - | 'application/json' | {"data":[{"afterHours":true,"date":"2006-01-05","order_num":2,"price":35.16,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}},{"afterHours":true,"date":"2006-01-06","order_num":3,"price":35.12,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}}]}
-| Add row to table | POST, PUT | /db/{database}/table/{table} | 'application/json' | {"afterHours":true,"date":"2006-01-05","order_num":2,"price":35.16,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}} | 'application/json' | {"message": "items added"}
+| Add row to table | POST, PUT | /db/{database}/table/{table} | 'application/json' | {"afterHours":true,"date":"2006-01-05","price":35.16,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}} | 'application/json' | {"message": "items added"}
 | Get Row with matching primary key | GET | /db/{database}/table/{table}/{key} | - | - | 'application/json' | {"data":[{"afterHours":true,"date":"2006-01-06","order_num":3,"price":35.12,"qty":null,"symbol":null,"trans":{"condition":{"limit":"36.00","time":"EndOfTradingDay"},"type":"BUY"}}]}
 | Update Row with matching primary key | POST | /db/{database}/table/{table}/{key} | 'application/json' | {"price": 34:12} | 'application/json' | {"message": "OK"}
 | Delete Row with matching primary key | DELETE | /db/{database}/table/{table}/{key} | - | - | 'application/json' | {"message": "OK"}
