@@ -385,10 +385,7 @@ def sync_job_check():
 
 class PyqlRest(unittest.TestCase):
     def test_01_create_user_and_setup_auth(self):
-        try:
-            self.test_rest = rest()
-        except Exception:
-            assert False, "error preparing class PyqlRest for unittest")
+        self.test_rest = rest()
         # Register new user - /auth/user/register
         result, rc = self.test_rest.register_user() # This will return error 400 if already exists
         assert rc == 201, f"expected rc 201 - user created, but received {result} {rc}"
