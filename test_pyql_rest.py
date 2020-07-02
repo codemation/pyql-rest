@@ -179,7 +179,7 @@ class cluster:
                 for endpoint in table_endpoints['in_sync']:
                     endpointInfo = table_endpoints['in_sync'][endpoint]
                     data_to_verify[endpoint], rc = probe(
-                        f"http://{endpointInfo['path']}/db/{endpointInfo['dbname']}/table/{table}/select",
+                        f"http://{endpointInfo['path']}/db/{endpointInfo['db_name']}/table/{table}/select",
                         auth={  
                             'method': 'token',
                             'auth': endpointInfo['token']
