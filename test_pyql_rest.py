@@ -174,11 +174,11 @@ class cluster:
             #print(f"tables {tables}")
             for tb in tables['data']:
                 table = tb['name']
-                dataToVerify = {}
+                data_to_verify = {}
                 table_endpoints, rc = self.probe(f"/cluster/{cluster['id']}/table/{table}/endpoints")
                 for endpoint in table_endpoints['in_sync']:
                     endpointInfo = table_endpoints['in_sync'][endpoint]
-                    dataToVerify[endpoint], rc = probe(
+                    data_to_verify[endpoint], rc = probe(
                         f"http://{endpointInfo['path']}/db/{endpointInfo['dbname']}/table/{table}/select",
                         auth={  
                             'method': 'token',
@@ -187,17 +187,17 @@ class cluster:
                         session=self.session
                     )
                     if rc == 200:
-                        dataToVerify[endpoint] = dataToVerify[endpoint]['data']
-                        #print(f"dataToVerify {dataToVerify[endpoint]}")
+                        data_to_verify[endpoint] = data_to_verify[endpoint]['data']
+                        #print(f"data_to_verify {data_to_verify[endpoint]}")
                     else:
-                        assert False, f"dataToVerify ERROR  when acessing endpoint: {endpointInfo} table: {table} -- {dataToVerify[endpoint]}"
+                        assert False, f"data_to_verify ERROR  when acessing endpoint: {endpointInfo} table: {table} -- {data_to_verify[endpoint]}"
                 verify[table] = {}
-                for endpoint in dataToVerify:
+                for endpoint in data_to_verify:
                     verify[table][endpoint] = {'status': [], 'diff': {}}
-                    for ep in dataToVerify:
+                    for ep in data_to_verify:
                         if ep == endpoint:
                             continue
-                        for t1r, t2r, in zip(dataToVerify[endpoint], dataToVerify[ep]):
+                        for t1r, t2r, in zip(data_to_verify[endpoint], data_to_verify[ep]):
                             if not t1r == t2r:
                                 if not ep in verify[table][endpoint]['diff']:
                                     verify[table][endpoint]['diff'][ep] = []
@@ -209,7 +209,7 @@ class cluster:
                             continue
                         verify[table][endpoint]['status'].append(True)
             
-            verifyFail = []
+            verify_fail = []
             for table, endpoints in verify.items():
                 for endpoint, status in endpoints.items():
                     if not table == 'jobs':
@@ -220,8 +220,8 @@ class cluster:
                                 self.verify_data(tryCount+1)
                                 return # avoid asserting if this is not the max retry run
                         if False in status['status']:
-                            verifyFail.append(f"{table} endpoint {endpoint} data did not match with {status['diff']}")
-            assert len(verifyFail) == 0, f"verification failed on endpoint(s) - {verifyFail}"
+                            verify_fail.append(f"{table} endpoint {endpoint} data did not match with {status['diff']}")
+            assert len(verify_fail) == 0, f"verification failed on endpoint(s) - {verify_fail}"
             print(f"verify completed for cluster {cluster['name']} - {verify}")
 
 
@@ -247,9 +247,9 @@ class cluster:
         return probe(f"http://{cluster_ip}:{cluster_port}{path}", **kw)
     def sync_job_check(self):
         # checking for sync jobs
-        maxCheck = 240 # should take less than 60 seconds for new sync jobs 
+        MAX_CHECK = 240 # should take less than 60 seconds for new sync jobs 
         start = time.time()
-        while time.time() - start < maxCheck:
+        while time.time() - start < MAX_CHECK:
             jobs, rc = self.get_cluster_jobs()
             if rc == 200:
                 jobs = [ job['type'] for job in jobs['data'] ]
@@ -257,50 +257,50 @@ class cluster:
                 break
             print(f"waiting for sync jobs to start {jobs} - {time.time() - start:.2f}")
             time.sleep(5)
-        assert 'syncjobs' in jobs, f"should take less than {maxCheck} seconds for new sync jobs"
+        assert 'syncjobs' in jobs, f"should take less than {MAX_CHECK} seconds for new sync jobs"
 
         self.step('syncjobs detected, waiting for pyql tables to sync')
         time.sleep(10)
-        maxSyncRunTimePerJob = 300
-        startTime = time.time()
-        lastCount = len(self.get_cluster_jobs('syncjobs')[0]['data'])
-        lastJob = None
-        while time.time() - startTime < maxSyncRunTimePerJob:
+        MAX_SYNC_RUN_TIME_PER_JOB = 300
+        start_time = time.time()
+        last_count = len(self.get_cluster_jobs('syncjobs')[0]['data'])
+        last_job = None
+        while time.time() - start_time < MAX_SYNC_RUN_TIME_PER_JOB:
             jobs, rc = self.get_cluster_jobs('syncjobs')
             if rc == 200:
-                if len(jobs['data']) < lastCount or len(jobs['data']) > lastCount:
-                    lastCount = len(jobs['data'])
-                    startTime = time.time()
+                if len(jobs['data']) < last_count or len(jobs['data']) > last_count:
+                    last_count = len(jobs['data'])
+                    start_time = time.time()
                 if len(jobs['data']) == 1:
-                    if lastJob == jobs['data'][0]['id']:
+                    if last_job == jobs['data'][0]['id']:
                         continue
                     else:
-                        lastJob = jobs['data'][0]['id']
-                        lastCount = len(jobs['data'])
-                        startTime = time.time()
-                if lastCount == 0:
+                        last_job = jobs['data'][0]['id']
+                        last_count = len(jobs['data'])
+                        start_time = time.time()
+                if last_count == 0:
                     break
-            print(f"waiting for {lastCount} sync jobs to complete {time.time() - startTime:.2f} sec")
+            print(f"waiting for {last_count} sync jobs to complete {time.time() - start_time:.2f} sec")
             time.sleep(5)
-        assert lastCount == 0, f"waited too long on a syncjobs job to finish - {time.time() - startTime:.2f}, {jobs}"
+        assert last_count == 0, f"waited too long on a syncjobs job to finish - {time.time() - start_time:.2f}, {jobs}"
     def insync_and_state_check(self):
         """
         checks state of tables & querries sync_job_check until state is in_sync True
         """
         self.step('verifying tables are properly synced on all endpoints')
-        isOk = True
+        is_ok = True
         limit, count = 10, 0
         while count < limit:
             try:
-                stateCheck, rc = self.probe('/cluster/pyql/table/state/select')
+                state_check, rc = self.probe('/cluster/pyql/table/state/select')
                 assert rc == 200, f"something wrong happened when checking state table {rc}"
-                for state in stateCheck['data']:
+                for state in state_check['data']:
                     if not state['in_sync'] == True or not state['state'] == 'loaded':
                         print(f"found state which was not in_sync=True & 'loaded {state}, retrying")
-                        isOk = False
+                        is_ok = False
                         self.sync_job_check()
                         break
-                if isOk:
+                if is_ok:
                     break
                 count+=1
             except Exception as e:
@@ -332,138 +332,138 @@ def probe(path, method='GET', data=None, timeout=20.0, auth=None, **kw):
     except:
         return r.text, r.status_code
 
-#testCluster = cluster()
+#test_cluster = cluster()
 
 
 def test_expand_cluster(count):
     """
     count - number of nodes to expand cluster by 
     """
-    join_token, rc = testCluster.probe(
+    join_token, rc = test_cluster.probe(
         f'/auth/token/join',
         auth={
-            'method': 'basic', 'auth': testCluster.config['init_admin_pw']
+            'method': 'basic', 'auth': test_cluster.config['init_admin_pw']
         }
     )
-    testCluster.step("test_03_cluster_expansion - expanding cluster to test resync mechanisms & expandability")
+    test_cluster.step("test_03_cluster_expansion - expanding cluster to test resync mechanisms & expandability")
     for _ in range(count):
-        testCluster.expand_cluster(join_token['join'])
+        test_cluster.expand_cluster(join_token['join'])
 
-    testCluster.step('wait 15 seconds and begin probing for "type": "syncjobs" jobs in jobs queue which are syncing newly added node')
+    test_cluster.step('wait 15 seconds and begin probing for "type": "syncjobs" jobs in jobs queue which are syncing newly added node')
     time.sleep(10)
     sync_job_check()
 
 def sync_job_check():
     # checking for sync jobs
-    maxCheck = 60 # should take less than 60 seconds for new sync jobs 
+    MAX_CHECK = 60 # should take less than 60 seconds for new sync jobs 
     start = time.time()
-    while time.time() - start < maxCheck:
-        jobs, rc = testCluster.get_cluster_jobs()
+    while time.time() - start < MAX_CHECK:
+        jobs, rc = test_cluster.get_cluster_jobs()
         if rc == 200:
             jobs = [ job['type'] for job in jobs['data'] ]
         if 'syncjobs' in jobs:
             break
         print(f"waiting for sync jobs to start {jobs}")
         time.sleep(5)
-    assert 'syncjobs' in jobs, f"should take less than {maxCheck} seconds for new sync jobs"
+    assert 'syncjobs' in jobs, f"should take less than {MAX_CHECK} seconds for new sync jobs"
 
-    testCluster.step('syncjobs detected, waiting for pyql tables to sync')
-    maxSyncRunTimePerJob = 45
-    startTime = time.time()
-    lastCount = len(testCluster.get_cluster_jobs('syncjobs')[0]['data'])
-    while time.time() - startTime < maxSyncRunTimePerJob:
-        jobs, rc = testCluster.get_cluster_jobs('syncjobs')
+    test_cluster.step('syncjobs detected, waiting for pyql tables to sync')
+    MAX_SYNC_RUN_TIME_PER_JOB = 45
+    start_time = time.time()
+    last_count = len(test_cluster.get_cluster_jobs('syncjobs')[0]['data'])
+    while time.time() - start_time < MAX_SYNC_RUN_TIME_PER_JOB:
+        jobs, rc = test_cluster.get_cluster_jobs('syncjobs')
         if rc == 200:
-            if len(jobs['data']) < lastCount or len(jobs['data']) > lastCount:
-                lastCount = len(jobs['data'])
-                startTime = time.time()
-            if lastCount == 0:
+            if len(jobs['data']) < last_count or len(jobs['data']) > last_count:
+                last_count = len(jobs['data'])
+                start_time = time.time()
+            if last_count == 0:
                 break
-        print(f"waiting for {lastCount} sync jobs to complete {time.time() - startTime} sec")
+        print(f"waiting for {last_count} sync jobs to complete {time.time() - start_time} sec")
         time.sleep(5)
-    assert lastCount == 0, f"waited too long on a syncjobs job to finish, {jobs}"
+    assert last_count == 0, f"waited too long on a syncjobs job to finish, {jobs}"
 
 class PyqlRest(unittest.TestCase):
     try:
-        testRest = rest()
+        test_rest = rest()
     except Exception:
         print("error preparing class PyqlRest for unittest")
     def test_01_create_user_and_setup_auth(self):
         # Register new user - /auth/user/register
-        result, rc = testRest.register_user() # This will return error 400 if already exists
+        result, rc = test_rest.register_user() # This will return error 400 if already exists
         assert rc == 201, f"expected rc 201 - user created, but received {result} {rc}"
 
         # This is expected to fail as running twice
-        result, rc = testRest.register_user()
+        result, rc = test_rest.register_user()
         assert rc == 400, f"expected error 400 as user should aready have existed, maybe error in user creation {result} {rc}"
         # Pull user auth token
-        testRest.auth_setup()
-        testRest.pull_join_token()        
+        test_rest.auth_setup()
+        test_rest.pull_join_token()        
     def test_02_init_data_cluster(self):
         # using join token - init data clusters
         for cluster in ['data', 'data1', 'data2']:
-            testRest.expand_data_cluster(cluster)
+            test_rest.expand_data_cluster(cluster)
     def test_03_expand_data_clusters(self):
-        testRest.mass_expand_and_simulate(2, 120)
-        testRest.step("cluster expansion completed, waiting 10 seconds to begin monitoring table state & running sync jobs")
+        test_rest.mass_expand_and_simulate(2, 120)
+        test_rest.step("cluster expansion completed, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        testRest.cluster.insync_and_state_check()
-        while testRest.is_running_simulations():
+        test_rest.cluster.insync_and_state_check()
+        while test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        testRest.cluster.verify_data()
+        test_rest.cluster.verify_data()
     def test_04_node_down_and_resync_soft(self):
         """
         this tests the clusters ability to handle a node going down but
         not exactly while there is current load 'in-flight', tests recovery 
         during load
         """
-        for cluster in testRest.cluster.clusters:
+        for cluster in test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = testRest.cluster.clusters[cluster][0][0]
-            testRest.step(f'stopping cluster {cluster} node with port {port}')
-            testRest.docker_stop(cluster, port)
-            testRest.step(f"starting db_simulator on cluster {cluster}")
-            testRest.db_simulate(cluster, 180)
+            port = test_rest.cluster.clusters[cluster][0][0]
+            test_rest.step(f'stopping cluster {cluster} node with port {port}')
+            test_rest.docker_stop(cluster, port)
+            test_rest.step(f"starting db_simulator on cluster {cluster}")
+            test_rest.db_simulate(cluster, 180)
         # restart nodes
-        for cluster in testRest.cluster.clusters:
+        for cluster in test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = testRest.cluster.clusters[cluster][0][0]
-            testRest.step(f'restarting cluster {cluster} node with port {port}')
-            testRest.expand_data_cluster(cluster, port=port)
-        testRest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
+            port = test_rest.cluster.clusters[cluster][0][0]
+            test_rest.step(f'restarting cluster {cluster} node with port {port}')
+            test_rest.expand_data_cluster(cluster, port=port)
+        test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        testRest.cluster.insync_and_state_check()
-        while testRest.is_running_simulations():
+        test_rest.cluster.insync_and_state_check()
+        while test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        testRest.cluster.verify_data()
+        test_rest.cluster.verify_data()
     def test_05_node_down_and_resync_hard(self):
         """
         this tests the clusters ability to handle a node going down
         while there are active transactions in-flight & recover properly
         while the same load is maintained
         """
-        for cluster in testRest.cluster.clusters:
+        for cluster in test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            testRest.db_simulate(cluster, 240)
-            port = testRest.cluster.clusters[cluster][0][0]
-            testRest.step(f'stopping cluster {cluster} node with port {port} - during load')
-            testRest.docker_stop(cluster, port)
+            test_rest.db_simulate(cluster, 240)
+            port = test_rest.cluster.clusters[cluster][0][0]
+            test_rest.step(f'stopping cluster {cluster} node with port {port} - during load')
+            test_rest.docker_stop(cluster, port)
         # restart nodes
-        for cluster in testRest.cluster.clusters:
+        for cluster in test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = testRest.cluster.clusters[cluster][0][0]
-            testRest.step(f'restarting cluster {cluster} node with port {port}')
-            testRest.expand_data_cluster(cluster, port=port)
-        testRest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
+            port = test_rest.cluster.clusters[cluster][0][0]
+            test_rest.step(f'restarting cluster {cluster} node with port {port}')
+            test_rest.expand_data_cluster(cluster, port=port)
+        test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        testRest.cluster.insync_and_state_check()
-        while testRest.is_running_simulations():
+        test_rest.cluster.insync_and_state_check()
+        while test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        testRest.cluster.verify_data()
+        test_rest.cluster.verify_data()
