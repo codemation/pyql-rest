@@ -384,86 +384,87 @@ def sync_job_check():
     assert last_count == 0, f"waited too long on a syncjobs job to finish, {jobs}"
 
 class PyqlRest(unittest.TestCase):
-    try:
-        test_rest = rest()
-    except Exception:
-        print("error preparing class PyqlRest for unittest")
+    def __init__(self):
+        try:
+            self.self.test_rest = rest()
+        except Exception:
+            print("error preparing class PyqlRest for unittest")
     def test_01_create_user_and_setup_auth(self):
         # Register new user - /auth/user/register
-        result, rc = test_rest.register_user() # This will return error 400 if already exists
+        result, rc = self.test_rest.register_user() # This will return error 400 if already exists
         assert rc == 201, f"expected rc 201 - user created, but received {result} {rc}"
 
         # This is expected to fail as running twice
-        result, rc = test_rest.register_user()
+        result, rc = self.test_rest.register_user()
         assert rc == 400, f"expected error 400 as user should aready have existed, maybe error in user creation {result} {rc}"
         # Pull user auth token
-        test_rest.auth_setup()
-        test_rest.pull_join_token()        
+        self.test_rest.auth_setup()
+        self.test_rest.pull_join_token()        
     def test_02_init_data_cluster(self):
         # using join token - init data clusters
         for cluster in ['data', 'data1', 'data2']:
-            test_rest.expand_data_cluster(cluster)
+            self.test_rest.expand_data_cluster(cluster)
     def test_03_expand_data_clusters(self):
-        test_rest.mass_expand_and_simulate(2, 120)
-        test_rest.step("cluster expansion completed, waiting 10 seconds to begin monitoring table state & running sync jobs")
+        self.test_rest.mass_expand_and_simulate(2, 120)
+        self.test_rest.step("cluster expansion completed, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        test_rest.cluster.insync_and_state_check()
-        while test_rest.is_running_simulations():
+        self.test_rest.cluster.insync_and_state_check()
+        while self.test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        test_rest.cluster.verify_data()
+        self.test_rest.cluster.verify_data()
     def test_04_node_down_and_resync_soft(self):
         """
         this tests the clusters ability to handle a node going down but
         not exactly while there is current load 'in-flight', tests recovery 
         during load
         """
-        for cluster in test_rest.cluster.clusters:
+        for cluster in self.test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = test_rest.cluster.clusters[cluster][0][0]
-            test_rest.step(f'stopping cluster {cluster} node with port {port}')
-            test_rest.docker_stop(cluster, port)
-            test_rest.step(f"starting db_simulator on cluster {cluster}")
-            test_rest.db_simulate(cluster, 180)
+            port = self.test_rest.cluster.clusters[cluster][0][0]
+            self.test_rest.step(f'stopping cluster {cluster} node with port {port}')
+            self.test_rest.docker_stop(cluster, port)
+            self.test_rest.step(f"starting db_simulator on cluster {cluster}")
+            self.test_rest.db_simulate(cluster, 180)
         # restart nodes
-        for cluster in test_rest.cluster.clusters:
+        for cluster in self.test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = test_rest.cluster.clusters[cluster][0][0]
-            test_rest.step(f'restarting cluster {cluster} node with port {port}')
-            test_rest.expand_data_cluster(cluster, port=port)
-        test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
+            port = self.test_rest.cluster.clusters[cluster][0][0]
+            self.test_rest.step(f'restarting cluster {cluster} node with port {port}')
+            self.test_rest.expand_data_cluster(cluster, port=port)
+        self.test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        test_rest.cluster.insync_and_state_check()
-        while test_rest.is_running_simulations():
+        self.test_rest.cluster.insync_and_state_check()
+        while self.test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        test_rest.cluster.verify_data()
+        self.test_rest.cluster.verify_data()
     def test_05_node_down_and_resync_hard(self):
         """
         this tests the clusters ability to handle a node going down
         while there are active transactions in-flight & recover properly
         while the same load is maintained
         """
-        for cluster in test_rest.cluster.clusters:
+        for cluster in self.test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            test_rest.db_simulate(cluster, 240)
-            port = test_rest.cluster.clusters[cluster][0][0]
-            test_rest.step(f'stopping cluster {cluster} node with port {port} - during load')
-            test_rest.docker_stop(cluster, port)
+            self.test_rest.db_simulate(cluster, 240)
+            port = self.test_rest.cluster.clusters[cluster][0][0]
+            self.test_rest.step(f'stopping cluster {cluster} node with port {port} - during load')
+            self.test_rest.docker_stop(cluster, port)
         # restart nodes
-        for cluster in test_rest.cluster.clusters:
+        for cluster in self.test_rest.cluster.clusters:
             if cluster == 'index':
                 continue
-            port = test_rest.cluster.clusters[cluster][0][0]
-            test_rest.step(f'restarting cluster {cluster} node with port {port}')
-            test_rest.expand_data_cluster(cluster, port=port)
-        test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
+            port = self.test_rest.cluster.clusters[cluster][0][0]
+            self.test_rest.step(f'restarting cluster {cluster} node with port {port}')
+            self.test_rest.expand_data_cluster(cluster, port=port)
+        self.test_rest.step("restarted nodes, waiting 10 seconds to begin monitoring table state & running sync jobs")
         time.sleep(10)
-        test_rest.cluster.insync_and_state_check()
-        while test_rest.is_running_simulations():
+        self.test_rest.cluster.insync_and_state_check()
+        while self.test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
-        test_rest.cluster.verify_data()
+        self.test_rest.cluster.verify_data()
