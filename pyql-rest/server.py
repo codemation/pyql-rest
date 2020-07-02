@@ -9,25 +9,25 @@ if __name__ == '__main__':
     try:
         import sys
         print(sys.argv)
-        nodeName = sys.argv[1]
-        port = sys.argv[2]
-        cluster = sys.argv[3]
-        clusterName = sys.argv[4]
-        action = sys.argv[5]
-        tables = sys.argv[6]
-        token = sys.argv[7]
+        NODE_NAME = sys.argv[1]
+        PORT = sys.argv[2]
+        CLUSTER_SVC = sys.argv[3]
+        CLUSTER_NAME = sys.argv[4]
+        CLUSTER_ACTION = sys.argv[5]
+        CLUSTER_TABLES = sys.argv[6]
+        JOIN_TOKEN = sys.argv[7]
     except:
         print("expected input: ")
         print("python server.py <node-ip> <node-port> <clusterIp:port>")
     if not port == None:
-        os.environ['PYQL_NODE'] = nodeName
-        os.environ['PYQL_PORT'] = port
-        os.environ['PYQL_CLUSTER_SVC'] = cluster
-        os.environ['PYQL_CLUSTER_NAME'] = clusterName
-        os.environ['PYQL_CLUSTER_ACTION'] = action
-        os.environ['PYQL_CLUSTER_TABLES'] = tables
-        os.environ['PYQL_CLUSTER_JOIN_TOKEN'] = token
-        main(port)
+        os.environ['PYQL_NODE'] = NODE_NAME
+        os.environ['PYQL_PORT'] = PORT
+        os.environ['PYQL_CLUSTER_SVC'] = CLUSTER_SVC
+        os.environ['PYQL_CLUSTER_NAME'] = CLUSTER_NAME
+        os.environ['PYQL_CLUSTER_ACTION'] = CLUSTER_ACTION
+        os.environ['PYQL_CLUSTER_TABLES'] = CLUSTER_TABLES
+        os.environ['PYQL_CLUSTER_JOIN_TOKEN'] = JOIN_TOKEN
+        main(PORT)
 else:
     # For loading when triggered by uWSGI
     if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:

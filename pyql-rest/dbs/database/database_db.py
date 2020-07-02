@@ -3,8 +3,8 @@ def run(server):
     import os, time
     from pyql import data
     log = server.log
-    dbConnnectRetries = 10
-    dbConnnectRetryDelayInSec = 5
+    DB_CONNECT_MAX_RETRY = 10
+    DB_CONNECT_RETRY_DELAY_IN_SEC = 5
     
     if os.environ.get('PYQL_CLUSTER_ACTION') == 'test':
         os.environ['DB_USER'] = 'josh'
@@ -33,7 +33,7 @@ def run(server):
         return config, 200
     def attach(config):
         database = config['database']
-        tryCount = 0
+        try_count = 0
         #try:
         if config['type'] == 'mysql':
             from mysql.connector import connect as connector
@@ -42,14 +42,14 @@ def run(server):
                 config['host'] = socket.gethostbyname(os.environ['HOSTNAME'])
         else:
             import sqlite3.connect as connector
-        while tryCount < dbConnnectRetries:
+        while try_count < DB_CONNECT_MAX_RETRY:
             try:
-                server.data[database] = data.database(connector, **config)
+                server.data[database] = data.Database(connector, **config)
                 return {"message": f"db {database} attached successfully"}, 200
             except Exception as e:
-                log.exception(f"enountered exception {repr(e)} during db {database} connect - sleeping {dbConnnectRetryDelayInSec} sec and retrying")
-                time.sleep(dbConnnectRetryDelayInSec)
-                tryCount+=1
+                log.exception(f"enountered exception {repr(e)} during db {database} connect - sleeping {DB_CONNECT_RETRY_DELAY_IN_SEC} sec and retrying")
+                time.sleep(DB_CONNECT_RETRY_DELAY_IN_SEC)
+                try_count+=1
                 continue
         return {"error": log.error(f"db {database} connect failed- check parameters provided / connectivity to {config}")}, 500
         

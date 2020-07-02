@@ -2,9 +2,9 @@ def run(server):
     from flask import request
     import os, uuid, time, json
     log = server.log
-    txnDefaultWaitInSec = 0.005     # default 5 ms
-    txnMaxWaitIntervalInSec = 0.050 # 50 ms
-    txnMaxWaitTimeInSec = 0.550     # 550 ms
+    TXN_DEFAULT_WAIT_IN_SEC = 0.005     # default 5 ms
+    TXN_MAX_WAIT_INTERVAL_IN_SEC = 0.050 # 50 ms
+    TXN_MAX_WAIT_TIME_IN_SEC = 0.550     # 550 ms
     cache = server.data['pyql'].tables['cache']
     # pull stats from docker instance
     # docker logs -f pyql-cluster-8090 2>&1 | grep '##cache commit' | grep 'WARNING' | awk '{print  $8" "$9" "$10" "$12}'
@@ -17,48 +17,47 @@ def run(server):
         """
         transaction = request.get_json() if trans == None else trans
         if 'txn' in transaction:
-            txnId = transaction['txn']
-            txnOrder = None
+            txn_id = transaction['txn']
             tx=None
-            waitTime = 0.0                      # total time waiting to commit txn 
-            waitInterval = txnDefaultWaitInSec  # amount of time to wait between checks - if multiple txns exist 
+            wait_time = 0.0                      # total time waiting to commit txn 
+            wait_interval = TXN_DEFAULT_WAIT_IN_SEC  # amount of time to wait between checks - if multiple txns exist 
             # Get transaction from cache db
             if action == 'commit':
                 while True:
                     txns = cache.select('id','timestamp',
-                        where={'tableName': table}
+                        where={'table_name': table}
                     )
-                    if not txnId in {tx['id'] for tx in txns}:
-                        return {"message": log.error(f"{txnId} does not exist in cache")}, 500
+                    if not txn_id in {tx['id'] for tx in txns}:
+                        return {"message": log.error(f"{txn_id} does not exist in cache")}, 500
                     if len(txns) == 1:
-                        if not txns[0]['id'] == txnId:
-                            warning = f"txn with id {txnId} does not exist for {database} {table}"
+                        if not txns[0]['id'] == txn_id:
+                            warning = f"txn with id {txn_id} does not exist for {database} {table}"
                             return {'warning': log.warning(warning)}, 500
-                        # txnId is only value inside
+                        # txn_id is only value inside
                         tx = txns[0]
                         break
                     # multiple pending txns - need to check timestamp to verify if this txn can be commited yet
                     txns = sorted(txns, key=lambda txn: txn['timestamp'])
                     for ind, txn in enumerate(txns):
-                        if txn['id'] == txnId:
+                        if txn['id'] == txn_id:
                             if ind == 0:
                                 tx = txns[0]
                                 break
-                            if waitTime > txnMaxWaitTimeInSec:
-                                warning = f"timeout of {waitTime} reached while waiting to commit {txnId} for {database} {table}, waiting on {txns[:ind]}"
+                            if wait_time > TXN_MAX_WAIT_TIME_IN_SEC:
+                                warning = f"timeout of {wait_time} reached while waiting to commit {txn_id} for {database} {table}, waiting on {txns[:ind]}"
                                 log.warning(warning)
-                                log.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {txnMaxWaitTimeInSec} reached")
+                                log.warning(f"removing txn with id {txns[0]['id']} maxWaitTime of {TXN_MAX_WAIT_TIME_IN_SEC} reached")
                                 cache.delete(where={'id': txns[0]['id']})
                                 break
                             break
                     if tx == None:
-                        log.warning(f"txnId {txnId} is behind txns {txns[:ind]} - waiting {waitTime} to retry")
-                        time.sleep(waitInterval)
-                        waitTime+=waitInterval 
-                        # waitInterval scales up to txnMaxWaitIntervalInSec
-                        waitInterval+=waitInterval 
-                        if waitInterval >= txnMaxWaitIntervalInSec:
-                            waitInterval = txnMaxWaitIntervalInSec
+                        log.warning(f"txn_id {txn_id} is behind txns {txns[:ind]} - waiting {wait_time} to retry")
+                        time.sleep(wait_interval)
+                        wait_time+=wait_interval 
+                        # wait_interval scales up to TXN_MAX_WAIT_INTERVAL_IN_SEC
+                        wait_interval+=wait_interval 
+                        if wait_interval >= TXN_MAX_WAIT_INTERVAL_IN_SEC:
+                            wait_interval = TXN_MAX_WAIT_INTERVAL_IN_SEC
                         continue
                     break
                 # Should not have broken out of loop here without a tx
@@ -66,25 +65,25 @@ def run(server):
                     log.error("tx is None, this should not hppen")
                     return {"error": "tx was none"}, 500
                 tx = cache.select('type','txn',
-                        where={'id': txnId})[0]
+                        where={'id': txn_id})[0]
                 try:
                     r, rc = server.actions[tx['type']](database, table, tx['txn'])
                     log.warning(f"##cache {action} response {r} rc {rc}")
                 except Exception as e:
                     r, rc = log.exception(f"Exception when performing cache {action}"), 500
                 
-                delTxn = cache.delete(
-                    where={'id': txnId}
+                del_txn = cache.delete(
+                    where={'id': txn_id}
                 )
                 if rc == 200:
                     # update last txn id
                     setParams = {
                         'set': {
-                            'lastTxnUuid': txnId,
-                            'lastModTime': float(time.time())
+                            'last_txn_uuid': txn_id,
+                            'last_mod_time': float(time.time())
                             },
                         'where': {
-                            'tableName': table
+                            'table_name': table
                         }
                     }
                     server.data['pyql'].tables['pyql'].update(
@@ -93,17 +92,17 @@ def run(server):
                     )
                 return {"message": r, "status": rc}, rc
             if action == 'cancel':
-                delTxn = cache.delete(
-                    where={'id': txnId}
+                del_txn = cache.delete(
+                    where={'id': txn_id}
                 )
-                return {'deleted': txnId}, 200
+                return {'deleted': txn_id}, 200
     @server.route('/db/<database>/cache/<table>/<action>/<txuuid>', methods=['POST'])
     @server.is_authenticated('local')
     def cache_action(database, table, action,txuuid):
         transaction = request.get_json()
         server.data['pyql'].tables['cache'].insert(**{
             'id': txuuid,
-            'tableName': table,
+            'table_name': table,
             'type': action,
             'timestamp': transaction['time'],
             'txn': transaction['txn']

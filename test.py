@@ -14,42 +14,42 @@ class TestData(unittest.TestCase):
 
         env = ['DB_USER','DB_PASSWORD','DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_TYPE']
         conf = ['user','password','host','port', 'database', 'type']
-        config = {cnfVal: os.getenv(dbVal).rstrip() for dbVal,cnfVal in zip(env,conf)}
+        config = {CONF_VAR: os.getenv(DB_VAR).rstrip() for DB_VAR, CONF_VAR in zip(env,conf)}
 
-        db = data.database(
+        db = data.Database(
             mysql.connector.connect, 
             **config
             )
         test(db)
     def test_run_sqlite_test(self):
         import sqlite3
-        db = data.database(
+        db = data.Database(
             sqlite3.connect, 
             database="testdb"
             )
         test(db)
-        refDb = data.database(
+        ref_db = data.Database(
             sqlite3.connect, 
             database="testdb"
             )
-        print(refDb.tables)
-        colNames = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'afterHours']
-        for col in colNames:
-            assert col in refDb.tables['stocks'].columns, f"missing column {col}"
+        print(ref_db.tables)
+        col_names = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'after_hours']
+        for col in col_names:
+            assert col in ref_db.tables['stocks'].columns, f"missing column {col}"
         
 """
 def test(db):
     def check_sel(requested, selection):
-        requestItems = []
+        request_items = []
         if requested == '*':
-            requestItems = trade.keys()
+            request_items = trade.keys()
         else:
             for request in requested:
                 assert request in trade, f'{request} is not a valid column in {trade}'
-                requestItems.append(request)
+                request_items.append(request)
         
         for col, value in trade.items():
-            if col in requestItems:
+            if col in request_items:
                 assert len(selection) > 0, f"selection should be greater than lenth 0, data was inserted"
                 assert col in selection[0], f"missing column '{col}' in select return"
                 assert str(value) == str(sel[0][col]), f"value {selection[0][col]} returned from select is not what was inserted {value}."
@@ -66,7 +66,7 @@ def test(db):
             ('symbol', str),
             ('qty', int),
             ('price', float),
-            ('afterHours', bool)
+            ('after_hours', bool)
         ], 
         'order_num' # Primary Key 
     )
@@ -100,14 +100,14 @@ def test(db):
     db.tables['keystore']['config1'] = {'a': 1, 'b': 2, 'c': 3}
     assert 'config1' in  db.tables['keystore'], "insertion failed using setitem for json data"
 
-    colNames = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'afterHours']
-    for col in colNames:
+    col_names = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'after_hours']
+    for col in col_names:
         assert col in db.tables['stocks'].columns
 
     # JSON Load test
-    txData = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
+    tx_data = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
 
-    trade = {'date': '2006-01-05', 'trans': txData, 'symbol': 'RHAT', 'qty': 100, 'price': 35.14, 'afterHours': True}
+    trade = {'date': '2006-01-05', 'trans': tx_data, 'symbol': 'RHAT', 'qty': 100, 'price': 35.14, 'after_hours': True}
 
     # pre insert * select # 
     sel = db.tables['stocks'].select('*')
@@ -122,7 +122,7 @@ def test(db):
     #     symbol='NTAP',
     #     qty=100.0,
     #     price=35.14,
-    #     afterHours=True
+    #     after_hours=True
     # )
 
 
@@ -143,9 +143,9 @@ def test(db):
 
     # Partial insert
 
-    partialTrade = {'date': '2006-01-05', 'trans': txData, 'price': 35.16,'qty': None, 'afterHours': True}
+    partial_trade = {'date': '2006-01-05', 'trans': tx_data, 'price': 35.16,'qty': None, 'after_hours': True}
 
-    db.tables['stocks'].insert(**partialTrade)
+    db.tables['stocks'].insert(**partial_trade)
 
     # * select # 
     sel = db.tables['stocks'].select('*')
@@ -172,13 +172,13 @@ def test(db):
     print(sel)
     
     # Update Data
-    txOld = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
-    txData['type'] = 'SELL'
+    tx_old = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
+    tx_data['type'] = 'SELL'
     
     db.tables['stocks'].update(
-        symbol='NTAP',trans=txData,
-        afterHours=False, qty=101, 
-        where={'order_num': 1, 'afterHours': True, 'trans': txOld})
+        symbol='NTAP',trans=tx_data,
+        after_hours=False, qty=101, 
+        where={'order_num': 1, 'after_hours': True, 'trans': tx_old})
     sel = db.tables['stocks'].select('*', where={'order_num': 1})[0]
     print(sel)
     assert sel['trans']['type'] == 'SELL' and sel['symbol'] == 'NTAP', f"values not correctly updated"
@@ -194,8 +194,8 @@ def test(db):
 
     # update data - use None Value
     db.tables['stocks'].update(
-        symbol=None,trans=txData,
-        afterHours=False, qty=101, 
+        symbol=None,trans=tx_data,
+        after_hours=False, qty=101, 
         where={'qty': 101})
 
     # * select NULL check # 
@@ -209,8 +209,8 @@ def test(db):
 
     # Delete Data 
 
-    db.tables['stocks'].delete(where={'order_num': 1, 'afterHours': False})
-    sel = db.tables['stocks'].select('*', where={'order_num': 1, 'afterHours': False})
+    db.tables['stocks'].delete(where={'order_num': 1, 'after_hours': False})
+    sel = db.tables['stocks'].select('*', where={'order_num': 1, 'after_hours': False})
     print(sel)
     assert len(sel) < 1, "delete should have removed order_num 1"
 
@@ -224,16 +224,16 @@ def test(db):
 def test(db):
     import random
     def check_sel(requested, selection):
-        requestItems = []
+        request_items = []
         if requested == '*':
-            requestItems = trade.keys()
+            request_items = trade.keys()
         else:
             for request in requested:
                 assert request in trade, f'{request} is not a valid column in {trade}'
-                requestItems.append(request)
+                request_items.append(request)
         
         for col, value in trade.items():
-            if col in requestItems:
+            if col in request_items:
                 assert len(selection) > 0, f"selection should be greater than lenth 0, data was inserted"
                 assert col in selection[0], f"missing column '{col}' in select return"
                 assert str(value) == str(sel[0][col]), f"value {selection[0][col]} returned from select is not what was inserted {value}."
@@ -250,7 +250,7 @@ def test(db):
             ('symbol', str),
             ('qty', int),
             ('price', float),
-            ('afterHours', bool)
+            ('after_hours', bool)
         ], 
         'order_num' # Primary Key 
     )
@@ -277,12 +277,12 @@ def test(db):
         [    
             ('id', int, 'UNIQUE'),
             ('name', str),
-            ('departmentId', int)
+            ('department_id', int)
 
         ], 
         'id', # Primary Key
-        fKeys={
-            'departmentId': {
+        foreign_keys={
+            'department_id': {
                     'table': 'departments', 
                     'ref': 'id',
                     'mods': 'ON UPDATE CASCADE ON DELETE CASCADE'
@@ -296,12 +296,12 @@ def test(db):
         [    
             ('id', int, 'UNIQUE'),
             ('name', str),
-            ('positionId', int),
+            ('position_id', int),
 
         ], 
         'id', # Primary Key
-        fKeys={
-            'positionId': {
+        foreign_keys={
+            'position_id': {
                     'table': 'positions', 
                     'ref': 'id',
                     'mods': 'ON UPDATE CASCADE ON DELETE CASCADE'
@@ -339,14 +339,14 @@ def test(db):
     db.tables['keystore']['config1'] = {'a': 1, 'b': 2, 'c': 3}
     assert 'config1' in  db.tables['keystore'], "insertion failed using setitem for json data"
 
-    colNames = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'afterHours']
-    for col in colNames:
+    col_names = ['order_num', 'date', 'trans', 'symbol', 'qty', 'price', 'after_hours']
+    for col in col_names:
         assert col in db.tables['stocks'].columns
 
     # JSON Load test
-    txData = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
+    tx_data = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
 
-    trade = {'order_num': 1, 'date': '2006-01-05', 'trans': txData, 'symbol': 'RHAT', 'qty': 100, 'price': 35.14, 'afterHours': True}
+    trade = {'order_num': 1, 'date': '2006-01-05', 'trans': tx_data, 'symbol': 'RHAT', 'qty': 100, 'price': 35.14, 'after_hours': True}
 
     # pre insert * select # trade
     sel = db.tables['stocks'].select('*')
@@ -361,7 +361,7 @@ def test(db):
     #     symbol='NTAP',
     #     qty=100.0,
     #     price=35.14,
-    #     afterHours=True
+    #     after_hours=True
     # )
     import uuid
     # create departments
@@ -375,52 +375,52 @@ def test(db):
         db.tables['departments'].insert(**department)
     
     positions = [
-        {'id': 100101, 'name': 'Director', 'departmentId': 1001},
-        {'id': 100102, 'name': 'Manager', 'departmentId': 1001},
-        {'id': 100103, 'name': 'Rep', 'departmentId': 1001},
-        {'id': 100104, 'name': 'Intern', 'departmentId': 1001},
-        {'id': 200101, 'name': 'Director', 'departmentId': 2001},
-        {'id': 200102, 'name': 'Manager', 'departmentId': 2001},
-        {'id': 200103, 'name': 'Rep', 'departmentId': 2001},
-        {'id': 200104, 'name': 'Intern', 'departmentId': 2001},
-        {'id': 300101, 'name': 'Director', 'departmentId': 3001},
-        {'id': 300102, 'name': 'Manager', 'departmentId': 3001},
-        {'id': 300103, 'name': 'Rep', 'departmentId': 3001},
-        {'id': 300104, 'name': 'Intern', 'departmentId': 3001},
-        {'id': 400101, 'name': 'Director', 'departmentId': 4001},
-        {'id': 400102, 'name': 'Manager', 'departmentId': 4001},
-        {'id': 400103, 'name': 'Rep', 'departmentId': 4001},
-        {'id': 400104, 'name': 'Intern', 'departmentId': 4001}
+        {'id': 100101, 'name': 'Director', 'department_id': 1001},
+        {'id': 100102, 'name': 'Manager', 'department_id': 1001},
+        {'id': 100103, 'name': 'Rep', 'department_id': 1001},
+        {'id': 100104, 'name': 'Intern', 'department_id': 1001},
+        {'id': 200101, 'name': 'Director', 'department_id': 2001},
+        {'id': 200102, 'name': 'Manager', 'department_id': 2001},
+        {'id': 200103, 'name': 'Rep', 'department_id': 2001},
+        {'id': 200104, 'name': 'Intern', 'department_id': 2001},
+        {'id': 300101, 'name': 'Director', 'department_id': 3001},
+        {'id': 300102, 'name': 'Manager', 'department_id': 3001},
+        {'id': 300103, 'name': 'Rep', 'department_id': 3001},
+        {'id': 300104, 'name': 'Intern', 'department_id': 3001},
+        {'id': 400101, 'name': 'Director', 'department_id': 4001},
+        {'id': 400102, 'name': 'Manager', 'department_id': 4001},
+        {'id': 400103, 'name': 'Rep', 'department_id': 4001},
+        {'id': 400104, 'name': 'Intern', 'department_id': 4001}
     ]
     
     def get_random_name():
         name = ''
-        fNames = ['Jane', 'Jill', 'Joe', 'John', 'Chris', 'Clara', 'Dale', 'Dana', 'Eli', 'Elly', 'Frank', 'George']
-        lNames = ['Adams', 'Bale', 'Carson', 'Doe', 'Franklin','Smith', 'Wallace', 'Jacobs']
-        fInd, lInd = random.randrange(len(fNames)-1), random.randrange(len(lNames)-1)
-        return f"{fNames[fInd]} {lNames[lInd]}"
+        first_names = ['Jane', 'Jill', 'Joe', 'John', 'Chris', 'Clara', 'Dale', 'Dana', 'Eli', 'Elly', 'Frank', 'George']
+        last_names = ['Adams', 'Bale', 'Carson', 'Doe', 'Franklin','Smith', 'Wallace', 'Jacobs']
+        random_first, random_last = random.randrange(len(first_names)-1), random.randrange(len(last_names)-1)
+        return f"{first_names[random_first]} {last_names[random_last]}"
     employees = []
-    def add_employee(eId, count, positionId):
-        empId = eId
+    def add_employee(employee_id, count, position_id):
+        emp_id = employee_id
         for _ in range(count):
-            employees.append({'id': empId, 'name': get_random_name(), 'positionId': positionId})
-            empId+=1
-    eId = 1000
+            employees.append({'id': emp_id, 'name': get_random_name(), 'position_id': position_id})
+            emp_id+=1
+    employee_id = 1000
     for position in positions:
         print(position)
         db.tables['positions'].insert(**position)
         if position['name'] == 'Director':
-            add_employee(eId, 1, position['id'])
-            eId+=1
+            add_employee(employee_id, 1, position['id'])
+            employee_id+=1
         elif position['name'] == 'Manager':
-            add_employee(eId, 2, position['id'])
-            eId+=2
+            add_employee(employee_id, 2, position['id'])
+            employee_id+=2
         elif position['name'] == 'Rep':
-            add_employee(eId, 4, position['id'])
-            eId+=4
+            add_employee(employee_id, 4, position['id'])
+            employee_id+=4
         else:
-            add_employee(eId, 8, position['id'])
-            eId+=8
+            add_employee(employee_id, 8, position['id'])
+            employee_id+=8
 
     
     for employee in employees:
@@ -430,52 +430,52 @@ def test(db):
     # join selects
 
     for position, count in [('Director', 4), ('Manager', 8), ('Rep', 16), ('Intern', 32)]:
-        joinSel = db.tables['employees'].select(
+        join_sel = db.tables['employees'].select(
             '*', 
             join={
-                'positions': {'employees.positionId': 'positions.id'},
-                'departments': {'positions.departmentId': 'departments.id'}
+                'positions': {'employees.position_id': 'positions.id'},
+                'departments': {'positions.department_id': 'departments.id'}
                 },
             where={
                 'positions.name': position
                 }
             )
-        assert len(joinSel) == count, f"expected number of {position}'s' is {count}, found {len(joinSel)}"
+        assert len(join_sel) == count, f"expected number of {position}'s' is {count}, found {len(join_sel)}"
     for department in ['HR', 'Marketing', 'Support', 'Sales']:
         for position, count in [('Director', 1),('Manager', 2), ('Rep', 4), ('Intern', 8)]:
-            joinSel = db.tables['employees'].select(
+            join_sel = db.tables['employees'].select(
                 '*', 
                 join={
-                    'positions': {'employees.positionId': 'positions.id'},
-                    'departments': {'positions.departmentId': 'departments.id'}
+                    'positions': {'employees.position_id': 'positions.id'},
+                    'departments': {'positions.department_id': 'departments.id'}
                     },
                 where={
                     'positions.name': position,
                     'departments.name': department
                     }
                 )
-            assert len(joinSel) == count, f"expected number of {position}'s' is {count}, found {len(joinSel)}"
+            assert len(join_sel) == count, f"expected number of {position}'s' is {count}, found {len(join_sel)}"
 
     # join select - testing default key usage if not provided
     for position, count in [('Director', 4),('Manager', 8), ('Rep', 16), ('Intern', 32)]:
-        joinSel = db.tables['employees'].select(
+        join_sel = db.tables['employees'].select(
             '*', 
             join='positions',
             where={'positions.name': position}
             )
-        assert len(joinSel) == count, f"expected number of {position}'s' is {count}, found {len(joinSel)}"
+        assert len(join_sel) == count, f"expected number of {position}'s' is {count}, found {len(join_sel)}"
 
     # join select - testing multiple single table conditions
-    joinSel = db.tables['employees'].select(
+    join_sel = db.tables['employees'].select(
             '*', 
             join={
                 'positions': {
-                            'employees.positionId':'positions.id', 
-                            'positions.id': 'employees.positionId'
+                            'employees.position_id':'positions.id', 
+                            'positions.id': 'employees.position_id'
                             }
                 }
     )
-    assert len(joinSel) == 60, f"expected number of employee's' is {60}, found {len(joinSel)}"
+    assert len(join_sel) == 60, f"expected number of employee's' is {60}, found {len(join_sel)}"
 
     
     # * select #
@@ -495,9 +495,9 @@ def test(db):
 
     # Partial insert
 
-    partialTrade = {'date': '2006-01-05', 'trans': txData, 'price': 35.16,'qty': None, 'afterHours': True}
+    partial_trade = {'date': '2006-01-05', 'trans': tx_data, 'price': 35.16,'qty': None, 'after_hours': True}
 
-    db.tables['stocks'].insert(**partialTrade)
+    db.tables['stocks'].insert(**partial_trade)
 
     # * select # 
     sel = db.tables['stocks'].select('*')
@@ -524,13 +524,13 @@ def test(db):
     print(sel)
     
     # Update Data
-    txOld = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
-    txData['type'] = 'SELL'
+    tx_old = {'type': 'BUY', 'condition': {'limit': '36.00', 'time': 'EndOfTradingDay'}}
+    tx_data['type'] = 'SELL'
     
     db.tables['stocks'].update(
-        symbol='NTAP',trans=txData,
-        afterHours=False, qty=101, 
-        where={'order_num': 1, 'afterHours': True, 'trans': txOld})
+        symbol='NTAP',trans=tx_data,
+        after_hours=False, qty=101, 
+        where={'order_num': 1, 'after_hours': True, 'trans': tx_old})
     sel = db.tables['stocks'].select('*', where={'order_num': 1})[0]
     print(sel)
     assert sel['trans']['type'] == 'SELL' and sel['symbol'] == 'NTAP', f"values not correctly updated"
@@ -546,8 +546,8 @@ def test(db):
 
     # update data - use None Value
     db.tables['stocks'].update(
-        symbol=None,trans=txData,
-        afterHours=False, qty=101, 
+        symbol=None,trans=tx_data,
+        after_hours=False, qty=101, 
         where={'qty': 101})
 
     # * select NULL check # 
@@ -561,8 +561,8 @@ def test(db):
 
     # Delete Data 
 
-    db.tables['stocks'].delete(where={'order_num': 1, 'afterHours': False})
-    sel = db.tables['stocks'].select('*', where={'order_num': 1, 'afterHours': False})
+    db.tables['stocks'].delete(where={'order_num': 1, 'after_hours': False})
+    sel = db.tables['stocks'].select('*', where={'order_num': 1, 'after_hours': False})
     print(sel)
     assert len(sel) < 1, "delete should have removed order_num 1"
 
@@ -590,16 +590,16 @@ if __name__ == '__main__':
         os.environ[arg] = v
     env = ['DB_USER','DB_PASSWORD','DB_HOST', 'DB_PORT', 'DB_NAME', 'DB_TYPE']
     conf = ['user','password','host','port', 'database', 'type']
-    config = {cnfVal: os.getenv(dbVal).rstrip() for dbVal,cnfVal in zip(env,conf)}
+    config = {CONF_VAR: os.getenv(DB_VAR).rstrip() for DB_VAR, CONF_VAR in zip(env,conf)}
     import mysql.connector
-    maxConnectRetry = 3
-    tryCount = 1
-    while tryCount <= maxConnectRetry:
+    MAX_DB_CONNECT_RETRY = 3
+    try_count = 1
+    while try_count <= MAX_DB_CONNECT_RETRY:
         try:
-            db = data.database(mysql.connector.connect, **config)
+            db = data.Database(mysql.connector.connect, **config)
             break
         except Exception as e:
-            print(f"exception setting up db object - {repr(e)} - will retry {tryCount} after 10 sec")
+            print(f"exception setting up db object - {repr(e)} - will retry {try_count} after 10 sec")
         time.sleep(10)
-        tryCount+=1
+        try_count+=1
     test(db)

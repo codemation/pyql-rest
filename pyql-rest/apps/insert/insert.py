@@ -15,7 +15,7 @@ def run(server):
                     error = f"invalid key provided '{k}' not found in table {table.name}, valid keys {[col for col in table.columns]}"
                     return {"error": log.error(error)}, 400
             response = table.insert(**params)
-            return {"status": 200, "message": "items added"}, 200
+            return {"message": "items added"}, 200
         else:
             return message, rc
     server.actions['insert'] = insert_func

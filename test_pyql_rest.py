@@ -4,7 +4,7 @@ class rest:
     def __init__(self, config=None):
         self.steps = 0
         # loads 
-        # {'clusterPort': 8090, 'clusterIp': '192.168.3.33', 'initAdminPw': 'YWRtaW46YWJjZDEyMzQ='}
+        # {'cluster_port': 8090, 'cluster_ip': '192.168.3.33', 'init_admin_pw': 'YWRtaW46YWJjZDEyMzQ='}
         if config == None:
             with open('test_pyql_rest_config.json', 'r') as config:
                 self.config = json.loads(config.read())
@@ -29,16 +29,16 @@ class rest:
                 return
         else:
             self.simulations[cluster] = {}
-        clusterIp = self.config['clusterIp']
-        clusterPort = self.config['clusterPort']
-        simulate = f"python db_simulator.py --host {clusterIp} --port {clusterPort} --cluster {cluster} --token {self.clusterToken} --duration {duration}"
+        cluster_ip = self.config['cluster_ip']
+        cluster_port = self.config['cluster_port']
+        simulate = f"python db_simulator.py --host {cluster_ip} --port {cluster_port} --cluster {cluster} --token {self.cluster_token} --duration {duration}"
         os.system(f"nohup {simulate} &")
         #subprocess.Popen(simulate.split(' '))
         self.simulations[cluster].update({'duration': duration, 'start': time.time()})
 
     def auth_setup(self):
         # Test Basic auth by pulling token from /auth/token/cluster
-        self.step('test_auth - trying to pull clusterToken')
+        self.step('test_auth - trying to pull cluster_token')
         self.auth = base64.encodebytes(
             f"{self.config['user']['username']}:{self.config['user']['password']}".encode('utf')
             ).decode().rstrip()
@@ -53,8 +53,8 @@ class rest:
         )
         assert rc == 200, f"error pulling user auth token {token} {rc}"
         print(f"token {token} rc {rc}")
-        self.clusterToken = token['token']
-        print(f"token pulled {self.clusterToken}")
+        self.cluster_token = token['token']
+        print(f"token pulled {self.cluster_token}")
     def docker_stop(self, cluster, port):
         assert cluster in self.cluster.clusters, f"{cluster} is missing or does not exist yet"
         for ports in self.cluster.clusters[cluster]:
@@ -62,7 +62,7 @@ class rest:
                 os.system(f'docker container stop pyql-rest-{port}')
                 return
         print(f"no instance with port {port} exists in cluster {cluster}")        
-    def mass_expand_and_simulate(self, count, simulateDuration):
+    def mass_expand_and_simulate(self, count, simulate_duration):
         for _ in range(count):
             for cluster in self.cluster.clusters:
                 if cluster == 'index':
@@ -73,35 +73,35 @@ class rest:
         for cluster in self.cluster.clusters:
             if cluster == 'index':
                 continue
-            self.db_simulate(cluster, simulateDuration)
+            self.db_simulate(cluster, simulate_duration)
     def expand_data_cluster(self, cluster, db_host=None, token=None, port=None):
-        clusterHost = self.cluster.config['clusterIp']
-        clusterPort = self.cluster.config['clusterPort']
-        token = self.joinToken if token == None else token
-        dbHost = clusterHost if db_host == None else db_host
+        cluster_host = self.cluster.config['cluster_ip']
+        cluster_port = self.cluster.config['cluster_port']
+        token = self.join_token if token == None else token
+        db_host = cluster_host if db_host == None else db_host
         # #Usage ./restart_pyql_rest.sh <tag> <local-port> <clusterhost:port> <db-port> <cluster> <init|join|test> [join token]
         if port == None:
-            restPort = 8190 + self.cluster.clusters['index']
-            restDbPort = 3330 + self.cluster.clusters['index']
+            rest_port = 8190 + self.cluster.clusters['index']
+            rest_db_port = 3330 + self.cluster.clusters['index']
             self.cluster.clusters['index']+=1
         else:
             for ports in self.cluster.clusters[cluster]:
                 if ports[0] == port:
-                    restPort, restDbPort = ports
+                    rest_port, rest_db_port = ports
                     break
         if not cluster in self.cluster.clusters:
-            self.cluster.clusters[cluster] = [(restPort, restDbPort)]
+            self.cluster.clusters[cluster] = [(rest_port, rest_db_port)]
             action = 'init'
         else:
             if port == None:
-                self.cluster.clusters[cluster].append((restPort, restDbPort))
+                self.cluster.clusters[cluster].append((rest_port, rest_db_port))
                 action = 'join'
             else:
                 action = 'rejoin'
-                os.system(f'docker container stop pyql-rest-{restPort}')
+                os.system(f'docker container stop pyql-rest-{rest_port}')
                 time.sleep(30)
         cache = '--no-cache' if action == 'init' else ''
-        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {restPort} {clusterHost}:{clusterPort} {dbHost} {restDbPort} {cluster} {action} {token} {cache}'
+        cmd = f'./restart_pyql_rest.sh dryrun.0.0 {rest_port} {cluster_host}:{cluster_port} {db_host} {rest_db_port} {cluster} {action} {token} {cache}'
         print(f"running cmd: {cmd}")
         os.system(cmd)
     def pull_join_token(self):
@@ -114,15 +114,15 @@ class rest:
         )
         assert rc == 200, f"error pulling user auth token {token} {rc}"
         print(f"token {token} rc {rc}")
-        self.joinToken = token['join']
-        print(f"token pulled {self.joinToken}")
+        self.join_token = token['join']
+        print(f"token pulled {self.join_token}")
 
     def probe(self, path, **kw):
-        clusterIp = self.config['clusterIp']
-        clusterPort = self.config['clusterPort']
-        kw['auth'] = {'method': 'token', 'auth': self.clusterToken} if not 'auth' in kw else kw['auth']
+        cluster_ip = self.config['cluster_ip']
+        cluster_port = self.config['cluster_port']
+        kw['auth'] = {'method': 'token', 'auth': self.cluster_token} if not 'auth' in kw else kw['auth']
         kw['session'] = self.session
-        return probe(f"http://{clusterIp}:{clusterPort}{path}", **kw)
+        return probe(f"http://{cluster_ip}:{cluster_port}{path}", **kw)
 
 
 
@@ -130,7 +130,7 @@ class cluster:
     def __init__(self, rest):
         self.rest = rest
         # loads 
-        # {'clusterPort': 8090, 'clusterIp': '192.168.3.33', 'initAdminPw': 'YWRtaW46YWJjZDEyMzQ='}
+        # {'cluster_port': 8090, 'cluster_ip': '192.168.3.33', 'init_admin_pw': 'YWRtaW46YWJjZDEyMzQ='}
         self.config = self.rest.config
         self.session = self.rest.session
         self.auth_setup()
@@ -140,16 +140,16 @@ class cluster:
         self.rest.steps+=1
     def auth_setup(self):
         # Test Basic auth by pulling token from /auth/token/cluster
-        self.step('test_auth - trying to pull clusterToken')
+        self.step('test_auth - trying to pull cluster_token')
         token, rc = self.probe(
             f'/auth/token/cluster',
             auth={
-                'method': 'basic', 'auth': self.config['initAdminPw']
+                'method': 'basic', 'auth': self.config['init_admin_pw']
             }
         )
         print(f"token {token} rc {rc}")
-        self.clusterToken = token['PYQL_CLUSTER_SERVICE_TOKEN']
-        print(f"token pulled {self.clusterToken}")
+        self.cluster_token = token['PYQL_CLUSTER_SERVICE_TOKEN']
+        print(f"token pulled {self.cluster_token}")
     def docker_stop(self, port):
         assert port in self.nodes, f"cannot stop node pyql-cluster-{port}, not in list of started nodes"
         os.system(f"docker container stop pyql-cluster-{port}")
@@ -175,11 +175,9 @@ class cluster:
             for tb in tables['data']:
                 table = tb['name']
                 dataToVerify = {}
-                # for each table endpoint - verify data
-                tableEndpoints, rc = self.probe(f"/cluster/{cluster['id']}/table/{table}/endpoints")
-                #print(f"tableEndpoints - {tableEndpoints}")
-                for endpoint in tableEndpoints['inSync']:
-                    endpointInfo = tableEndpoints['inSync'][endpoint]
+                table_endpoints, rc = self.probe(f"/cluster/{cluster['id']}/table/{table}/endpoints")
+                for endpoint in table_endpoints['in_sync']:
+                    endpointInfo = table_endpoints['in_sync'][endpoint]
                     dataToVerify[endpoint], rc = probe(
                         f"http://{endpointInfo['path']}/db/{endpointInfo['dbname']}/table/{table}/select",
                         auth={  
@@ -232,7 +230,7 @@ class cluster:
         if jobType == None:
             return self.probe(
                 '/cluster/pyql/table/jobs/select', 
-                auth={'method': 'token', 'auth': self.clusterToken})
+                auth={'method': 'token', 'auth': self.cluster_token})
         return self.probe(
             '/cluster/pyql/table/jobs/select', method='POST',
             data={
@@ -240,13 +238,13 @@ class cluster:
                     'type': jobType
                 }
             },
-            auth={'method': 'token', 'auth': self.clusterToken})
+            auth={'method': 'token', 'auth': self.cluster_token})
     def probe(self, path, **kw):
-        clusterIp = self.config['clusterIp']
-        clusterPort = self.config['clusterPort']
-        kw['auth'] = {'method': 'token', 'auth': self.clusterToken} if not 'auth' in kw else kw['auth']
+        cluster_ip = self.config['cluster_ip']
+        cluster_port = self.config['cluster_port']
+        kw['auth'] = {'method': 'token', 'auth': self.cluster_token} if not 'auth' in kw else kw['auth']
         kw['session'] = self.session
-        return probe(f"http://{clusterIp}:{clusterPort}{path}", **kw)
+        return probe(f"http://{cluster_ip}:{cluster_port}{path}", **kw)
     def sync_job_check(self):
         # checking for sync jobs
         maxCheck = 240 # should take less than 60 seconds for new sync jobs 
@@ -287,7 +285,7 @@ class cluster:
         assert lastCount == 0, f"waited too long on a syncjobs job to finish - {time.time() - startTime:.2f}, {jobs}"
     def insync_and_state_check(self):
         """
-        checks state of tables & querries sync_job_check until state is inSync True
+        checks state of tables & querries sync_job_check until state is in_sync True
         """
         self.step('verifying tables are properly synced on all endpoints')
         isOk = True
@@ -297,8 +295,8 @@ class cluster:
                 stateCheck, rc = self.probe('/cluster/pyql/table/state/select')
                 assert rc == 200, f"something wrong happened when checking state table {rc}"
                 for state in stateCheck['data']:
-                    if not state['inSync'] == True or not state['state'] == 'loaded':
-                        print(f"found state which was not inSync=True & 'loaded {state}, retrying")
+                    if not state['in_sync'] == True or not state['state'] == 'loaded':
+                        print(f"found state which was not in_sync=True & 'loaded {state}, retrying")
                         isOk = False
                         self.sync_job_check()
                         break
@@ -341,15 +339,15 @@ def test_expand_cluster(count):
     """
     count - number of nodes to expand cluster by 
     """
-    joinToken, rc = testCluster.probe(
+    join_token, rc = testCluster.probe(
         f'/auth/token/join',
         auth={
-            'method': 'basic', 'auth': testCluster.config['initAdminPw']
+            'method': 'basic', 'auth': testCluster.config['init_admin_pw']
         }
     )
     testCluster.step("test_03_cluster_expansion - expanding cluster to test resync mechanisms & expandability")
     for _ in range(count):
-        testCluster.expand_cluster(joinToken['join'])
+        testCluster.expand_cluster(join_token['join'])
 
     testCluster.step('wait 15 seconds and begin probing for "type": "syncjobs" jobs in jobs queue which are syncing newly added node')
     time.sleep(10)

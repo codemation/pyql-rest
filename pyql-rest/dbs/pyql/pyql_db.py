@@ -11,10 +11,10 @@ def run(server):
         config=dict()
         if 'PYQL_TYPE' in os.environ:
             if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
-                dbLocation = os.environ.get('PYQL_VOLUME_PATH')
-                if dbLocation == None:
-                    dbLocation = '/mnt/pyql-rest'
-                config['database'] = f'{dbLocation}/pyql'
+                db_location = os.environ.get('PYQL_VOLUME_PATH')
+                if db_location == None:
+                    db_location = '/mnt/pyql-rest'
+                config['database'] = f'{db_location}/pyql'
 
         else:
             with open('.cmddir', 'r') as projDir:
@@ -25,7 +25,7 @@ def run(server):
         if 'PYQL_DEBUG' in os.environ and os.environ['PYQL_DEBUG'] == 'Enabled':
             config['debug'] = True
         log.info("finished imports")
-        server.data['pyql'] = data.database(sqlite3.connect, **config)
+        server.data['pyql'] = data.Database(sqlite3.connect, **config)
         log.info("finished dbsetup")
         setup.attach_tables(server)
         return {"status": 200, "message": log.info(f"database pyql attached successfully")}, 200

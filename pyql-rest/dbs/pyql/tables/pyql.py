@@ -10,26 +10,26 @@ def db_attach(server):
             [
                 ('uuid', str), 
                 ('database', str),
-                ('tableName', str),
-                ('lastTxnUuid', str), 
-                ('lastModTime', float)
+                ('table_name', str),
+                ('last_txn_uuid', str), 
+                ('last_mod_time', float)
             ],
-            'tableName'
+            'table_name'
             )
-        #dbUuid = uuid.uuid1() 
+        #db_uuid = uuid.uuid1() 
 
     for database in server.data:
         if database == 'pyql':
             continue
-        dbSelect = pyqldb.tables['pyql'].select('uuid','database', where={'database': database})
-        if len(dbSelect) > 0:
+        db_select = pyqldb.tables['pyql'].select('uuid','database', where={'database': database})
+        if len(db_select) > 0:
             continue
         # DB did not exist yet in pyql table
-        dbUuid = uuid.uuid1()
+        db_uuid = uuid.uuid1()
         for tb in server.data[database].tables:
             pyqldb.tables['pyql'].insert(**{
-                'uuid': dbUuid,
+                'uuid': db_uuid,
                 'database': database,
-                'tableName': tb,
-                'lastModTime': time.time()
+                'table_name': tb,
+                'last_mod_time': time.time()
                 })

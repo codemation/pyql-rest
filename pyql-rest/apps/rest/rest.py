@@ -8,9 +8,9 @@ def run(server):
     for db in server.data:
         if db == 'pyql':
             continue
-        uuidCheck = server.data['pyql'].tables['pyql'].select('uuid', where={'database': db})
-        if len(uuidCheck) > 0:
-            for _,v in uuidCheck[0].items():
+        uuid_check = server.data['pyql'].tables['pyql'].select('uuid', where={'database': db})
+        if len(uuid_check) > 0:
+            for _,v in uuid_check[0].items():
                 dbuuid = str(v)
         else:
             dbuuid = str(uuid.uuid1())
@@ -20,16 +20,16 @@ def run(server):
                 'lastModTime': time.time()
             })
 
-        nodeId = dbuuid
+        NODE_ID = dbuuid
         tables = []
-        tableToJoin = []
+        tables_to_join = []
         if os.environ.get('PYQL_CLUSTER_ACTION') == 'init':
             if os.environ['PYQL_CLUSTER_TABLES'].upper() == 'ALL':
-                tableToJoin = [tb for tb in server.data[db].tables]
+                tables_to_join = [tb for tb in server.data[db].tables]
             else:
-                tableToJoin = [tb for tb in os.environ['PYQL_CLUSTER_TABLES'].split(',')] #TODO - Add check for env during setup
-        print(f"#REST tablesToJoin {tableToJoin}")
-        for tb in tableToJoin:
+                tables_to_join = [tb for tb in os.environ['PYQL_CLUSTER_TABLES'].split(',')] #TODO - Add check for env during setup
+        print(f"#REST tables_to_join {tables_to_join}")
+        for tb in tables_to_join:
             if not tb in tables:
                 tables.append(
                     {
@@ -37,8 +37,8 @@ def run(server):
                     })
         print(f"#REST tables {tables}")
         if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' and not os.environ.get('PYQL_TYPE') == 'STANDALONE':
-            joinClusterJob = {
-                "job": f"{os.environ['HOSTNAME']}joinCluster",
+            join_cluster_job = {
+                "job": f"{os.environ['HOSTNAME']}join_cluster",
                 "jobType": "cluster",
                 "method": "POST",
                 "path": f"/cluster/{os.environ['PYQL_CLUSTER_NAME']}/join",
@@ -51,18 +51,18 @@ def run(server):
                         'uuid': dbuuid
                     },
                     "tables": tables,
-                    "consistency": tableToJoin # TODO - add to environ variable
+                    "consistency": tables_to_join # TODO - add to environ variable
                 }
             }
-            joinClusterJob['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
-            server.internal_job_add(joinClusterJob)
+            join_cluster_job['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
+            server.internal_job_add(join_cluster_job)
         @server.route('/pyql/node')
         def cluster_node():
             """
                 returns node-id - to be used by workers instead of relying on pod ip:
             """
-            log.warning(f"get nodeId called {nodeId}")
-            return {"uuid": nodeId}, 200
+            log.warning(f"get NODE_ID called {NODE_ID}")
+            return {"uuid": NODE_ID}, 200
         @server.route('/cache/reset', methods=['POST'])
         @server.is_authenticated('local')
         def node_reset_cache(reason=None):
