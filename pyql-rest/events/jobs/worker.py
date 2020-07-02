@@ -66,7 +66,7 @@ def get_and_process_job(path):
         job_id = job['id']
         job = job['config']
         try:
-            if job['jobType'] == 'cluster':
+            if job['job_type'] == 'cluster':
                 #Distribute to cluster job queue
                 print(f"adding job {job} to cluster jobs queue")
                 if 'join_cluster' in job['job']: # need to use joinToken
@@ -74,14 +74,14 @@ def get_and_process_job(path):
                 else:
                     message, rc = probe(f"{CLUSTER_SVC}/cluster/pyql/jobs/add", 'POST', job)
                 print(f"finished adding job {job} to cluster jobs queue {message} {rc}")
-            elif job['jobType'] == 'node':
+            elif job['job_type'] == 'node':
                 auth = 'local' if not 'initCluster' in job['job'] else 'cluster'
                 message, rc = probe(f"{NODE_PATH}{job['path']}", job['method'], job['data'], auth=auth)
-            elif job['jobType'] == 'tablesync':
+            elif job['job_type'] == 'tablesync':
                 print(f"adding job {job} to tablesync queue")
                 message, rc = add_job_to_queue(f'/cluster/pyql/syncjobs/add', job)
             else:
-                message, rc =  f"{job['job']} is missing jobType field", 200
+                message, rc =  f"{job['job']} is missing job_type field", 200
             if not rc == 200:
                 probe(f'{NODE_PATH}/internal/job/{job_id}/queued', 'POST', auth='local')
             else:
