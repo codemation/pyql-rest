@@ -464,4 +464,5 @@ class PyqlRest(unittest.TestCase):
         while test_rest.is_running_simulations():
             print("waiting on running simulations to complete")
             time.sleep(10)
+        test_rest.cluster.insync_and_state_check()
         test_rest.cluster.verify_data()
