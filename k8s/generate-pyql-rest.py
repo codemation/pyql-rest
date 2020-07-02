@@ -101,7 +101,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: pyql-rest
-        image: joshjamison/pyql-rest:latest
+        image: joshjamison/pyql-rest:alpha0.20
         env:
         - name: PYQL_CLUSTER_ACTION
           value: {action}
@@ -241,7 +241,7 @@ spec:
           subPath: "mysql"
           mountPath: /var/lib/mysql
       - name: pyql-rest
-        image: joshjamison/pyql-rest:latest
+        image: joshjamison/pyql-rest:alpha0.20
         env:
         - name: PYQL_CLUSTER_ACTION
           value: join
@@ -283,7 +283,7 @@ EOF
         replicaMysqlStatefulSetYaml = f"pyql-rest-replica-ss-{config['clusterid']}.yaml"
         write_k8s_config_to_file(replicaMysqlStatefulSetYaml, replicaMysqlStatefulSet)
 
-
+    
 
 if __name__ == '__main__':
     expected = [
