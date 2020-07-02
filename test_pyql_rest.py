@@ -384,12 +384,11 @@ def sync_job_check():
     assert last_count == 0, f"waited too long on a syncjobs job to finish, {jobs}"
 
 class PyqlRest(unittest.TestCase):
-    def __init__(self):
+    def test_01_create_user_and_setup_auth(self):
         try:
             self.self.test_rest = rest()
         except Exception:
             print("error preparing class PyqlRest for unittest")
-    def test_01_create_user_and_setup_auth(self):
         # Register new user - /auth/user/register
         result, rc = self.test_rest.register_user() # This will return error 400 if already exists
         assert rc == 201, f"expected rc 201 - user created, but received {result} {rc}"
