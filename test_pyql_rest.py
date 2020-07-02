@@ -386,7 +386,7 @@ def sync_job_check():
 class PyqlRest(unittest.TestCase):
     def test_01_create_user_and_setup_auth(self):
         try:
-            self.self.test_rest = rest()
+            self.test_rest = rest()
         except Exception:
             print("error preparing class PyqlRest for unittest")
         # Register new user - /auth/user/register
