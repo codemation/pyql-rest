@@ -69,7 +69,7 @@ def get_and_process_job(path):
             if job['jobType'] == 'cluster':
                 #Distribute to cluster job queue
                 print(f"adding job {job} to cluster jobs queue")
-                if 'joinCluster' in job['job']: # need to use joinToken
+                if 'join_cluster' in job['job']: # need to use joinToken
                     message, rc = probe(f"{CLUSTER_SVC}{job['path']}", job['method'], job['data'], token=job['joinToken'])
                 else:
                     message, rc = probe(f"{CLUSTER_SVC}/cluster/pyql/jobs/add", 'POST', job)
