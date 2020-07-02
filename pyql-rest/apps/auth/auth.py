@@ -2,7 +2,7 @@
 def run(server):
     from flask import request, make_response
     import os, uuid, time, json, base64, jwt, string, random
-    charNums = string.ascii_letters + ''.join([str(i) for i in range(10)])
+    char_nums = string.ascii_letters + ''.join([str(i) for i in range(10)])
     log = server.log
     def encode(secret, **kw):
         try:
@@ -21,13 +21,13 @@ def run(server):
     def decode_password(encodedPw, auth):
         return decode(encodedPw, auth)
     def validate_user_pw(user, pw):
-        userSel = server.data['pyql'].tables['authlocal'].select('id', 'password', where={'username': user})
-        if len(userSel) == 0:
+        user_sel = server.data['pyql'].tables['authlocal'].select('id', 'password', where={'username': user})
+        if len(user_sel) == 0:
             return {"message": f"user / pw combination does not exist or is incorrect"}, 401
-        log.warning(f"checking auth for {userSel}")
+        log.warning(f"checking auth for {user_sel}")
         try:
-            decoded = decode_password(userSel[0]['password'], pw)
-            return {"message": f"Auth Ok", "userid": userSel[0]['id']}, 200
+            decoded = decode_password(user_sel[0]['password'], pw)
+            return {"message": f"Auth Ok", "userid": user_sel[0]['id']}, 200
         except Exception as e:
             return {"error": log.exception(f"Auth failed for user {user} - invalid credentials")}, 401
         
@@ -44,31 +44,31 @@ def run(server):
         def is_auth(f):
             def check_auth(*args, **kwargs):
                 if not 'auth' in request.__dict__:
-                    tokenType = 'PYQL_CLUSTER_TOKEN_KEY' if not location == 'local' else 'PYQL_LOCAL_TOKEN_KEY'
-                    key = server.env[tokenType]
+                    token_type = 'PYQL_CLUSTER_TOKEN_KEY' if not location == 'local' else 'PYQL_LOCAL_TOKEN_KEY'
+                    key = server.env[token_type]
                     log.warning(f"checking auth from {check_auth.__name__} for {f} {args} {kwargs} {request.headers}")
                     if not 'Authentication' in request.headers:
                         return {"error": log.error("missing Authentication")}, 401
                     auth = request.headers['Authentication']
                     if 'Token' in auth:
                         token = auth.split(' ')[1].rstrip()
-                        #decodedToken = decode(token, os.environ[tokenType])
-                        decodedToken = decode(token, key)
-                        if decodedToken == None: 
+                        #decoded_token = decode(token, os.environ[token_type])
+                        decoded_token = decode(token, key)
+                        if decoded_token == None: 
                             return {"error": log.error("token authentication failed")}, 401
-                        request.auth = decodedToken['id']
-                        if 'join' in decodedToken['expiration']:
+                        request.auth = decoded_token['id']
+                        if 'join' in decoded_token['expiration']:
                             # Join tokens should only be used to join an endpoint to a cluster
                             if not 'join_cluster' in str(f):
                                 return {"error": log.error(f"token authentication failed, join token auth attempted")}, 400
-                        if isinstance(decodedToken['expiration'], float):
-                            if not decodedToken['expiration'] > time.time():
-                                warning = f"token valid but expired for user with id {decodedToken['id']}"
+                        if isinstance(decoded_token['expiration'], float):
+                            if not decoded_token['expiration'] > time.time():
+                                warning = f"token valid but expired for user with id {decoded_token['id']}"
                                 return {"error": log.warning(warning)}, 401 #TODO - Check returncode for token expiration
-                        log.warning(f"token auth successful for {request.auth} using type {tokenType} key {key}")
+                        log.warning(f"token auth successful for {request.auth} using type {token_type} key {key}")
                     if 'Basic' in auth:
-                        base64Cred = auth.split(' ')[1]
-                        creds = base64.decodestring(base64Cred.encode('utf-8')).decode()
+                        base64_cred = auth.split(' ')[1]
+                        creds = base64.decodestring(base64_cred.encode('utf-8')).decode()
                         if not ':' in creds:
                             return {
                                 "error": "Basic authentication did not contain user pw separated by ':' Use: echo user:password | base64"
@@ -113,7 +113,7 @@ def run(server):
         log.warning('creating PYQL_LOCAL_TOKEN_KEY')
         r, rc = set_token_key(  
             'local', 
-            {'PYQL_LOCAL_TOKEN_KEY': ''.join(random.choice(charNums) for i in range(12))}
+            {'PYQL_LOCAL_TOKEN_KEY': ''.join(random.choice(char_nums) for i in range(12))}
             )
         log.warning(f"finished creating PYQL_LOCAL_TOKEN_KEY {server.env['PYQL_LOCAL_TOKEN_KEY']} - {r} {rc}")
     else:
@@ -131,25 +131,25 @@ def run(server):
     server.create_auth_token = create_auth_token
     
     # check for existing local pyql service user, create if not exists
-    pyqlServiceUser = server.data['pyql'].tables['authlocal'].select('*', where={'username': 'pyql'})
+    pyql_service_user = server.data['pyql'].tables['authlocal'].select('*', where={'username': 'pyql'})
 
-    if len(pyqlServiceUser) == 0:
-        serviceId = str(uuid.uuid1())
+    if len(pyql_service_user) == 0:
+        service_id = str(uuid.uuid1())
         server.data['pyql'].tables['authlocal'].insert(**{
-            'id': serviceId,
+            'id': service_id,
             'username': 'pyql',
             'type': 'service'
         })
-        log.warning(f"created new service account with id {serviceId}")
-        serviceToken = create_auth_token(serviceId, 'never', 'LOCAL')
-        log.warning(f"created service account token {serviceToken}")
+        log.warning(f"created new service account with id {service_id}")
+        service_token = create_auth_token(service_id, 'never', 'LOCAL')
+        log.warning(f"created service account token {service_token}")
         # create user - if type stand-alone
         if os.environ.get('PYQL_TYPE') == 'STANDALONE':
             for var in ['PYQL_USER', 'PYQL_PASSWORD']:
-                credsProvided = True
+                creds_provided = True
                 if os.environ.get(var) == None:
-                    credsProvided = False
-            if credsProvided:
+                    creds_provided = False
+            if creds_provided:
                 server.data['pyql'].tables['authlocal'].insert(**{
                     'id': str(uuid.uuid1()),
                     'username': os.environ.get('PYQL_USER'), 
@@ -158,11 +158,11 @@ def run(server):
                 })
     else:
         log.warning(f"found existing service account")
-        serviceToken = create_auth_token(
-            pyqlServiceUser[0]['id'], 
+        service_token = create_auth_token(
+            pyql_service_user[0]['id'], 
             'never', 'LOCAL')
     # Local Token
-    server.env['PYQL_LOCAL_SERVICE_TOKEN'] = serviceToken
+    server.env['PYQL_LOCAL_SERVICE_TOKEN'] = service_token
 
         
     # Retrieve current local / cluster token - requires auth 

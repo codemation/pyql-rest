@@ -39,7 +39,7 @@ def run(server):
         if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' and not os.environ.get('PYQL_TYPE') == 'STANDALONE':
             join_cluster_job = {
                 "job": f"{os.environ['HOSTNAME']}join_cluster",
-                "jobType": "cluster",
+                "job_type": "cluster",
                 "method": "POST",
                 "path": f"/cluster/{os.environ['PYQL_CLUSTER_NAME']}/join",
                 "data": {
@@ -54,7 +54,7 @@ def run(server):
                     "consistency": tables_to_join # TODO - add to environ variable
                 }
             }
-            join_cluster_job['joinToken'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
+            join_cluster_job['join_token'] = os.environ['PYQL_CLUSTER_JOIN_TOKEN']
             server.internal_job_add(join_cluster_job)
         @server.route('/pyql/node')
         def cluster_node():
