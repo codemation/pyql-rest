@@ -388,7 +388,7 @@ class PyqlRest(unittest.TestCase):
         try:
             self.test_rest = rest()
         except Exception:
-            print("error preparing class PyqlRest for unittest")
+            assert False, "error preparing class PyqlRest for unittest")
         # Register new user - /auth/user/register
         result, rc = self.test_rest.register_user() # This will return error 400 if already exists
         assert rc == 201, f"expected rc 201 - user created, but received {result} {rc}"
