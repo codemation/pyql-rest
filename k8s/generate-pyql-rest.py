@@ -101,7 +101,7 @@ spec:
       terminationGracePeriodSeconds: 5
       containers:
       - name: pyql-rest
-        image: joshjamison/pyql-rest:alpha0.20
+        image: joshjamison/pyql-rest:alpha0.21
         env:
         - name: PYQL_CLUSTER_ACTION
           value: {action}
@@ -241,7 +241,7 @@ spec:
           subPath: "mysql"
           mountPath: /var/lib/mysql
       - name: pyql-rest
-        image: joshjamison/pyql-rest:alpha0.20
+        image: joshjamison/pyql-rest:alpha0.21
         env:
         - name: PYQL_CLUSTER_ACTION
           value: join
