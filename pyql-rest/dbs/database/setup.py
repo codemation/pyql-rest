@@ -1,4 +1,4 @@
  # database
-def attach_tables(server):            
+async def attach_tables(server):            
     pass
             

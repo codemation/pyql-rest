@@ -1,10 +1,14 @@
-def db_attach(server):
+async def db_attach(server):
     db = server.data['pyql']
-    db.create_table(
+    if 'internaljobs' in db.tables:
+        await db.run('drop table internaljobs')
+    await db.create_table(
        'internaljobs', [
-           ('id', str, 'UNIQUE NOT NULL'), 
+           ('id', str, 'UNIQUE NOT NULL'),
+           ('name', str, 'UNIQUE NOT NULL'),
            ('status', str), 
            ('config', str)
        ],
-       'id'
+       'id',
+       cache_enabled=True
     )

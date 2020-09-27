@@ -2,10 +2,7 @@ FROM joshjamison/uwsgi_python37
 
 ENV PATH="$V_ENV/bin:$PATH"
 
-# Add Dependencies
-#COPY /requirements.txt .
-
-RUN git clone https://github.com/codemation/pyql-rest.git
+RUN git clone --single-branch --branch fastapi https://github.com/codemation/pyql-rest.git
 
 RUN pip install -r pyql-rest/requirements.txt
 

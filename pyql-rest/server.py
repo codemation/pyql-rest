@@ -1,6 +1,8 @@
-from flask import Flask
 import os, socket
-app = Flask(__name__)
+
+from fastapi import FastAPI
+app = FastAPI()
+
 def main(port):
     import setup
     setup.run(app)
@@ -30,10 +32,22 @@ if __name__ == '__main__':
         main(PORT)
 else:
     # For loading when triggered by uWSGI
-    if os.environ['PYQL_TYPE'] in ['K8S', 'STANDALONE']:
+    if os.environ.get('PYQL_TYPE') in ['K8S', 'STANDALONE']:
         os.environ['PYQL_NODE'] = socket.gethostbyname(socket.getfqdn())
         if os.environ['PYQL_TYPE'] == 'K8S':
             os.environ['PYQL_HOST'] = socket.gethostbyname(socket.getfqdn())
+    else:
+        # stand-alone
+        #   env1="-e PYQL_HOST=192.168.1.10 -e PYQL_PORT=8090 -e PYQL_TYPE=STANDALONE 
+        #  -e PYQL_USER=pyql_admin -e PYQL_PASSWORD='abcd1234' 
+        #  -e DB_TYPE=sqlite3 -e DB_NAMES=company "
+        os.environ['PYQL_NODE'] = '192.168.1.8'
+        os.environ['PYQL_PORT'] = '8190'
+        os.environ['PYQL_TYPE'] = 'STANDALONE'
+        os.environ['PYQL_USER'] = 'pyql_admin'
+        os.environ['PYQL_PASSWORD'] = 'abcd1234'
+        os.environ['DB_TYPE'] = 'sqlite'
+        os.environ['DB_NAMES'] = 'stocks'
 
     import setup
     setup.run(app)

@@ -1,13 +1,60 @@
 
-def run(server):
+async def run(server):
     server.actions = {}
 
-    def check_db_table_exist(database,table):
+    #### Create HTTPException Handler
+    from fastapi import HTTPException, Request
+    import json, uuid, asyncio, random
+
+    log = server.log
+
+    # Reset SETUP_ID
+    await server.env.set_item('SETUP_ID', 'UNSET')
+    await asyncio.sleep(2)
+
+    server.setup_id = str(uuid.uuid1())
+
+    env_setup_id = await server.env['SETUP_ID']
+    log.warning(f"ENV SETUP ID: {env_setup_id}")
+    if await server.env['SETUP_ID'] in [None, 'UNSET']:
+        await server.env.set_item('SETUP_ID', server.setup_id)
+
+    if await server.env['SETUP_ID'] == server.setup_id:
+        log.warning(f"SETUP_ID using {server.setup_id}")
+
+    def http_exception(status, detail):
+        raise HTTPException(status_code=status, detail=detail)
+    server.http_exception = http_exception
+
+    class RequestStorage:
+        def __init__(self, url, headers, method, json_body):
+            self.url = url
+            self.headers = dict(headers)
+            self.method = method
+            self.json = json_body
+
+
+
+    async def process_request(request: Request):
+        json_body = None
+        if 'content-length' in request.headers and request.headers['content-type'] == 'application/json':
+            body = await request.body()
+            json_body = json.loads(body) if len(body) > 0 else None
+        return RequestStorage(
+            request.url, 
+            request.headers, 
+            request.method, 
+            json_body
+            )
+    server.process_request = process_request
+
+    pass # apps start here
+    async def check_db_table_exist(database,table):
         if not database in server.data:
-            server.db_check(database)
+            await server.db_check(database)
         if database in server.data:
             if not table in server.data[database].tables:
-                server.db_check(database)
+                await server.db_check(database)
             if table in server.data[database].tables:
                 return "OK", 200
             else:
@@ -17,31 +64,26 @@ def run(server):
     server.check_db_table_exist = check_db_table_exist
 
     from apps.auth import auth
-    auth.run(server)
+    await auth.run(server)
     
     from apps.select import select
-    select.run(server)            
+    await select.run(server)            
             
     from apps.update import update
-    update.run(server)            
+    await update.run(server)            
             
     from apps.delete import delete
-    delete.run(server)            
+    await delete.run(server)            
             
     from apps.insert import insert
-    insert.run(server)            
+    await insert.run(server)            
             
     from apps.table import table
-    table.run(server)            
+    await table.run(server)            
             
     from apps.internal import internal
-    internal.run(server)                       
-            
-    from apps.cache import cache
-    cache.run(server)           
+    await internal.run(server)                                 
             
     from apps.rest import rest
-    rest.run(server)            
-            
-           
+    await rest.run(server)            
             

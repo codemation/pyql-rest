@@ -1,10 +1,11 @@
-def db_attach(server):
+async def db_attach(server):
     db = server.data['pyql']
-    db.create_table(
+    await db.create_table(
        'env', [
            ('env', str, 'UNIQUE NOT NULL'), 
            ('val', str)
        ],
-       'env'
+       'env',
+       cache_enabled=True
     )
     server.env = db.tables['env']

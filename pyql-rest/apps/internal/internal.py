@@ -1,75 +1,131 @@
 # internal
-def run(server):
+async def run(server):
     import uuid
     log = server.log
+    from fastapi import Request
 
-    def db_check(database):
+    async def db_check(database):
         db = server.data[database]
         if db.type == 'sqlite':
-            result = db.get(f"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
+            result = await db.get(f"SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';")
             tables = [t[0] for t in result]
+            if database == 'cluster':
+                cluster_tables = ['clusters', 'endpoints', 'tables', 'state', 'pyql']
+                for index, check in enumerate(cluster_tables):
+                    log.info(f"checking {check}")
+                    if not check in tables:
+                        error = f"missing table {check} in database {database}"
+                        server.http_exception(500, log.error(error))
+                    
             for r in result:
                 log.info(f"db_check - found {r}")
-        else:
-            try:
-                tables = db.get('show tables')
-            except Exception as e:
-                log.exception("error list tables")
-                log.warning("trying to re-attach databases")
-                server.attach_databases()
-                tables = db.get('show tables')
-            tables = [t[0] for t in tables]
+        else:    
+            tables = await db.run('show tables')
             log.info(f"db_check result: {tables}")
             for table in tables:
-                if not table in server.data[database].tables:
-                    server.data[database].load_tables()
-        return {"messages": log.info(f"{database} status ok"), "tables": tables}
+                if not table[0] in server.data[database].tables:
+                    await server.data[database].load_tables()
+        return {"messages": f"{database} status ok", "tables": list(server.data[database].tables.keys())}
     server.db_check = db_check
     
-    def internal_job_add(job):
-        jobId = str(uuid.uuid1())
-        server.data['pyql'].tables['internaljobs'].insert(**{
-            'id': jobId,
-            'status': 'queued',
-            'config': job
-        })
+    async def internal_job_add(job):
+        job_id = str(uuid.uuid1())
+        await server.data['pyql'].tables['internaljobs'].insert(
+            **{
+                'id': job_id,
+                'name': job['job'],
+                'status': 'queued',
+                'config': job
+            }
+        )
     server.internal_job_add = internal_job_add
 
-    @server.route('/internal/job/<id>/<action>', methods=['POST'])
+    @server.api_route('/internal/job/{id}/{action}', methods=['POST'])
+    async def internal_job_queue_action(id: str, action: str, request: Request):
+        return await internal_job_queue_action(id, action,  request=await server.process_request(request))
     @server.is_authenticated('local')
-    def internal_job_queue_action(id, action):
-        if action == 'finished':
-            server.data['pyql'].tables['internaljobs'].delete(where={'id': id})
-        if action == 'queued':
-            server.data['pyql'].tables['internaljobs'].update(status='queued', where={'id': id})
-        return {"message": f"{action} on jobId {id} completed successfully"}, 200
+    async def internal_job_queue_action(id, action, **kw):
+        return await job_queue_action(id, action, **kw)
 
-    @server.route('/internal/job')
+    async def job_queue_action(job_id, action, **kw):
+        log.warning(f"job_queue_action {job_id} - {action}")
+        try:
+            if action == 'finished':
+                result = await server.data['pyql'].tables['internaljobs'].delete(
+                    where={'id': job_id}
+                )
+                log.warning(f"finished result {result}")
+            if action == 'queued':
+                await server.clusters.internaljobs.update(
+                    status='queued', 
+                    where={'id': job_id}
+                )
+            return {"message": f"{action} on {job_id} completed successfully"}
+        except Exception as e:
+            return {
+                "message": log.exception(f"error when performing {action} on job_id {job_id}")
+                }
+    server.job_queue_action = job_queue_action
+
+    @server.api_route('/internal/job')
+    async def internal_job_queue_pull_api(request: Request):
+        return await internal_job_queue_pull( request=await server.process_request(request))
+
     @server.is_authenticated('local')
-    def internal_job_queue_pull():
-        jobs = server.data['pyql'].tables['internaljobs'].select('id', where={'status': 'queued'})
+    async def internal_job_queue_pull(**kw):
+        return await job_queue_pull(**kw)
+    async def job_queue_pull(**kw):
+        jobs = await server.data['pyql'].tables['internaljobs'].select(
+            'id', 
+            where={'status': 'queued'}
+        )
         if len(jobs) > 0:
             for job in jobs:
-                server.data['pyql'].tables['internaljobs'].update(status='running', where={'id': job['id'], 'status': 'queued'})
-                reserved = server.data['pyql'].tables['internaljobs'].select('*', where={'id': job['id'], 'status': 'running'})
+                await server.data['pyql'].tables['internaljobs'].update(
+                    status='running', 
+                    where={'id': job['id'], 'status': 'queued'}
+                )
+                reserved = await server.data['pyql'].tables['internaljobs'].select(
+                    '*', 
+                    where={'id': job['id'], 'status': 'running'}
+                )
+                log.warning(f"job_queue_pull reserved job: {reserved}")
                 if len(reserved) == 1:
-                    return {'id': job['id'], 'config': reserved[0]['config']}, 200
-        return {"status": 200, "message": "no jobs in queue"}, 200
-    @server.route('/internal/jobs')
+                    reserved_config = reserved[0]['config']
+                    return {'id': job['id'], 'config': reserved_config}
+        return {"message": "no jobs in queue"}
+    
+    server.job_queue_pull = job_queue_pull
+
+    @server.api_route('/internal/jobs')
+    async def internal_list_job_queue(request: Request):
+        return await internal_list_job_queue( request=await server.process_request(request))
     @server.is_authenticated('local')
-    def internal_list_job_queue():
-        return {'jobs': server.jobs}, 200
-    @server.route('/internal/db/check')
+    async def internal_list_job_queue(**kw):
+        return {'jobs': server.jobs}
+
+    @server.api_route('/internal/db/check')
+    async def internal_db_check_api(request: Request):
+        return await internal_db_check_auth( request=await server.process_request(request))
+
     @server.is_authenticated('local')
-    def internal_db_check():
+    async def internal_db_check_auth(**kw):
+        return await internal_db_check(**kw)
+    async def internal_db_check(**kw):
         messages = []
         for database in server.data:
-            messages.append(db_check(database))
-        return {"result": messages if len(messages) > 0 else "No databases attached", "jobs": server.jobs}, 200
-    @server.route('/internal/db/<database>/status')
+            messages.append(await db_check(database))
+        return {"result": messages if len(messages) > 0 else "No databases attached", "jobs": server.jobs}
+    
+    server.internal_db_check = internal_db_check
+
+    @server.api_route('/internal/db/{database}/status')
+    async def internal_db_status_api(database: str, request: Request):
+        return await internal_db_status(database,  request=await server.process_request(request))
+
     @server.is_authenticated('local')
-    def internal_db_status(database):
+    async def internal_db_status(database, **kw):
         if database in server.data:
-            return db_check(database), 200
+            return await db_check(database)
         else:
-            return {"status": 404, "message": f"database with name {database} not found"}, 404
+            server.http_exception(404, f"database with name {database} not found")

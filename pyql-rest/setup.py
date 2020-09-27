@@ -1,6 +1,13 @@
 # pyql-rest
 def run(server):
-    import os
+    import os, uuid
+    from fastapi.testclient import TestClient
+    from fastapi.websockets import WebSocket
+    import uvloop, asyncio, random
+    asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
+    event_loop = asyncio.get_event_loop()
+    server.event_loop = event_loop
+    
     ## LOAD ENV Vars & Default values
     environ_vars = [
             {'PYQL_DEBUG': False}
@@ -39,9 +46,29 @@ def run(server):
     server.jobs = []
     from logs import setup as log_setup
     log_setup.run(server)
-    from dbs import setup as db_setup # TOO DOO -Change func name later
-    db_setup.run(server) # TOO DOO - Change func name later
-    from apps import setup
-    setup.run(server)
-    from events import setup as event_setup
-    event_setup.run(server)
+
+    log = server.log
+
+    async def rest_setup():
+
+        from dbs import setup as db_setup # TOO DOO -Change func name later
+        await db_setup.run(server) # TOO DOO - Change func name later
+        from apps import setup
+        await setup.run(server)
+        from events import setup as event_setup
+        await event_setup.run(server)
+        return {"message": log.info("cluster setup completed")}
+
+    rest_setup_id = str(uuid.uuid1())
+
+    @server.websocket_route(f"/rest_setup/{rest_setup_id}")
+    async def attach_databases(websocket: WebSocket):
+        await websocket.accept()
+        response = await rest_setup()
+        await websocket.send_json({"message": log.info(response)})
+        await websocket.close()
+    def trigger_cluster_setup():
+        client = TestClient(server)
+        with client.websocket_connect(f"/rest_setup/{rest_setup_id}") as websocket:
+            return websocket.receive_json()
+    trigger_cluster_setup()
