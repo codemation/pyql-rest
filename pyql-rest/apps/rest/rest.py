@@ -36,11 +36,11 @@ async def run(server):
         print(f"#REST tables_to_join {tables_to_join}")
         for tb in tables_to_join:
             if not tb in tables:
-                table_cfg = await server.get_table_config(db, tb)
                 tables.append(
                     {
-                        tb: table_cfg[0]
-                    })
+                        tb: await server.get_table_config(db, tb)
+                    }
+                )
         print(f"#REST tables {tables}")
         if not os.environ.get('PYQL_CLUSTER_ACTION') == 'test' and not os.environ.get('PYQL_TYPE') == 'STANDALONE':
             join_cluster_job = {
