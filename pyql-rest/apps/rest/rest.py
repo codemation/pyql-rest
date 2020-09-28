@@ -39,7 +39,7 @@ async def run(server):
     server.get_endpoint_sessions = get_endpoint_sessions
 
     # creating initial session for this nodeq
-    await get_endpoint_sessions(node_id)
+    await get_endpoint_sessions(NODE_ID)
 
     async def cleanup_session(endpoint):
         #try:
@@ -182,8 +182,8 @@ async def run(server):
         """
             returns node-id - to be used by workers instead of relying on pod ip:
         """
-        log.warning(f"get node_id called {node_id}")
-        return {"uuid": node_id}
+        log.warning(f"get node_id called {NODE_ID}")
+        return {"uuid": NODE_ID}
 
     @server.api_route('/cache/reset', methods=['POST'])
     async def cluster_node_reset_cache(reason: str, request: Request):
