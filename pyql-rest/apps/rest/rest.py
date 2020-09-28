@@ -134,11 +134,8 @@ async def run(server):
             })
 
         NODE_ID = dbuuid
-
-    # creating initial session for this nodeq
-    await get_endpoint_sessions(NODE_ID)
-
-
+        # creating initial session for this nodeq
+        await get_endpoint_sessions(NODE_ID)
         tables = []
         tables_to_join = []
         if os.environ.get('PYQL_CLUSTER_ACTION') == 'init':
