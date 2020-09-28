@@ -1,6 +1,6 @@
 # rest
 async def run(server):
-    import uuid, time, os
+    import uuid, time, os, asyncio
     from fastapi import Request
     from aiohttp import ClientSession
     from apps.rest.asyncrequest import (
@@ -9,7 +9,6 @@ async def run(server):
         async_post_request
     )
 
-    
     log = server.log
 
     os.environ['HOSTNAME'] = '-'.join(os.environ['PYQL_NODE'].split('.'))

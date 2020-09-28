@@ -56,7 +56,7 @@ async def run(server):
                 )
                 log.warning(f"finished result {result}")
             if action == 'queued':
-                await server.data['pyql'].internaljobs.update(
+                await server.data['pyql'].tables['internaljobs'].update(
                     status='queued', 
                     where={'id': job_id}
                 )
