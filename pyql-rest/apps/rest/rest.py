@@ -38,9 +38,6 @@ async def run(server):
     # attaching to global server var    
     server.get_endpoint_sessions = get_endpoint_sessions
 
-    # creating initial session for this nodeq
-    await get_endpoint_sessions(NODE_ID)
-
     async def cleanup_session(endpoint):
         #try:
         if endpoint in server.sessions:
@@ -117,10 +114,6 @@ async def run(server):
 
 
 
-
-
-
-
     # check pyql tables & create join jobs to join cluster
     for db in server.data:
         if db == 'pyql':
@@ -141,6 +134,11 @@ async def run(server):
             })
 
         NODE_ID = dbuuid
+
+    # creating initial session for this nodeq
+    await get_endpoint_sessions(NODE_ID)
+
+
         tables = []
         tables_to_join = []
         if os.environ.get('PYQL_CLUSTER_ACTION') == 'init':
