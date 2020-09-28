@@ -132,8 +132,9 @@ async def run(server):
                 'database': db, 
                 'lastModTime': time.time()
             })
-
+        
         NODE_ID = dbuuid
+
         # creating initial session for this nodeq
         await get_endpoint_sessions(NODE_ID)
         tables = []
