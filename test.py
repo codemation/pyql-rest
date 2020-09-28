@@ -1,5 +1,6 @@
-from aiopyql import data
+import asyncio
 import os, unittest, json, time
+from aiopyql import data
 
 
 class TestData(unittest.TestCase):
