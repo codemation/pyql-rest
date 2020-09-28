@@ -51,7 +51,7 @@ async def run(server):
                 "data": {
                     "name": os.environ['HOSTNAME'],
                     "path": f"{os.environ['PYQL_HOST']}:{os.environ['PYQL_PORT']}",
-                    "token": server.env['PYQL_LOCAL_SERVICE_TOKEN'],
+                    "token": await server.env['PYQL_LOCAL_SERVICE_TOKEN'],
                     "database": {
                         'name': db,
                         'uuid': dbuuid
@@ -82,7 +82,7 @@ async def run(server):
         """
         trace=kw['trace']
         trace(f"cache reset called for {reason}")
-        server.reset_cache()
+        await server.reset_cache()
         return {"message": f"{nodeId} reset_cache completed"} 
     server.node_reset_cache = node_reset_cache
     #TODO - Create path for adding job to rejoin cluster if a table is discovered as added / removed
