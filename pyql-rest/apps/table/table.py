@@ -333,10 +333,10 @@ async def run(server):
 
     @server.api_route('/db/{database}/table/create', methods=['POST'])
     async def db_create_table_func(database: str, config: dict, request: Request):
-        return await create_table_func(database, config, request=await server.process_request(request))
+        return await create_table_auth(database, config, request=await server.process_request(request))
 
     @server.is_authenticated('local')
-    async def create_table_func(database, config, **kw):
+    async def create_table_auth(database, config, **kw):
         return await create_table(database, config, **kw)
     async def create_table(database, config, **kw):
         if database in server.data:
@@ -394,4 +394,13 @@ async def run(server):
                     cache_enabled=tb_config['cache_enabled'] if 'cache_enabled' in tb_config else False
                     )
                 await server.db_check(database)
+                await server.data[PYQL_TABLE_DB].tables['pyql'].insert(
+                    **{
+                        'uuid': await server.env[f'{database}_uuid'],
+                        'database': database,
+                        'table_name': table_name,
+                    }
+                )
+
+
                 return {"message": log.warning(f"""table {table_name} created successfully """)}
