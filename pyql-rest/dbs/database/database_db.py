@@ -47,6 +47,8 @@ async def run(server):
         while try_count < DB_CONNECT_MAX_RETRY:
             try:
                 server.data[database] = await data.Database.create(**config)
+                #TODO - parameterize enable_cache to allow for enable/disable via env
+                server.data[database].enable_cache()
                 return {"message": f"db {database} attached successfully"}
             except Exception as e:
                 log.exception(f"enountered exception {repr(e)} during db {database} connect - sleeping {DB_CONNECT_RETRY_DELAY_IN_SEC} sec and retrying")
