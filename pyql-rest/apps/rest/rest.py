@@ -131,8 +131,10 @@ async def run(server):
         if len(uuid_check) > 0:
             for _,v in uuid_check[0].items():
                 dbuuid = str(v)
+                await server.env.set_item(f'{db}_uuid', dbuuid)
         else:
             dbuuid = str(uuid.uuid1())
+            await server.env.set_item(f'{db}_uuid', dbuuid)
             await server.data['pyql'].tables['pyql'].insert(**{
                 'uuid': dbuuid,
                 'database': db, 
