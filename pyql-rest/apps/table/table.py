@@ -172,7 +172,9 @@ async def run(server):
                     "type": str(col.type.__name__), 
                     "mods": col.mods } for k,col in table.columns.items()],
                 "primary_key": table.prim_key,
-                "foreign_keys": table.foreign_keys
+                "foreign_keys": table.foreign_keys,
+                "cache_enabled": table.cache_enabled,
+                "max_cache_len": table.max_cache_len
             }        
         }
         return response
