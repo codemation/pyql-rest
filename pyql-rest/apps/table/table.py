@@ -295,7 +295,12 @@ async def run(server):
 
     @server.api_route('/db/{database}/table/{table}/sync', methods=['POST'])
     async def sync_table_func_api(database: str, table: str, data_to_sync: dict, request: Request):
-        return await sync_table_func(database, table, data_to_sync, request=await server.process_request(request))
+        return await sync_table_func(
+            database, 
+            table, 
+            data_to_sync, 
+            request=await server.process_request(request)
+        )
 
     @server.is_authenticated('local')
     async def sync_table_func(database, table, data_to_sync, **kw):
