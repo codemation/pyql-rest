@@ -134,7 +134,7 @@ async def run(server):
                 await server.env.set_item(f'{db}_uuid', dbuuid)
         else:
             dbuuid = str(uuid.uuid1())
-            await server.env.set_item(f'{db}_uuid', dbuuid)
+            await server.env.set_item(f'{db}_uuid', dbuuid
             await server.data['pyql'].tables['pyql'].insert(**{
                 'uuid': dbuuid,
                 'database': db, 
