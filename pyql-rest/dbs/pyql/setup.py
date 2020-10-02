@@ -1,9 +1,5 @@
  # pyql
 async def attach_tables(server):
-
-    from dbs.pyql.tables import cache
-    await cache.db_attach(server)
-            
     from dbs.pyql.tables import internaljobs
     await internaljobs.db_attach(server)
             
