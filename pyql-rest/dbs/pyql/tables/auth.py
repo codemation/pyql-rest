@@ -1,7 +1,7 @@
 
 async def db_attach(server):
     db = server.data['pyql']
-    if 'authlocal' in db:
+    if 'authlocal' in db.tables:
         return
     await db.create_table(
        'authlocal', [
