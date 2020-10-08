@@ -66,7 +66,7 @@ async def run(server):
                         decoded_token = decode(token, key)
 
                         if decoded_token == None: 
-                            server.http_exception(401, og.error(f"token authentication failed"))
+                            server.http_exception(401, log.error(f"token authentication failed"))
 
                         kwargs['authentication'] = decoded_token['id']
 
