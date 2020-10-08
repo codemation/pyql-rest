@@ -241,14 +241,22 @@ async def run(server):
 
     async def table_flush(database: str, table: str, flush_path: dict, **kw):
         
-        # pull last txn time 
-        last_txn_time = await server.data[PYQL_TABLE_DB].tables['pyql'].select(
-            'last_txn_time',
-            where={
-                'table_name': table
-            }
-        )
-        last_txn_time = last_txn_time[0]['last_txn_time']
+        while True:
+            # pull last txn time 
+            last_txn_time = await server.data[PYQL_TABLE_DB].tables['pyql'].select(
+                'last_txn_time',
+                where={
+                    'table_name': table
+                }
+            )
+            last_txn_time = last_txn_time[0]['last_txn_time']
+            
+            if 'last_txn_time' in server.pending_txns:
+                if server.pending_txns['last_txn_time'] > last_txn_time:
+                    log.warning(f"table flush pending for newer txns, waiting to retry")
+                    await asyncio.sleep(0.02)
+                    continue
+            break
 
         log.warning(f"table_flush - table {table} pulling using last_txn_time {last_txn_time}")
         # Using flush_path - pull txns newer than the latest txn
@@ -270,6 +278,23 @@ async def run(server):
         update_last_txn_time = None
         flush_results = []
         for txn in new_txns:
+            """
+            in case of duplicate flush ops
+            prevent same txn from being run
+            """
+            txn_timestamp = txn['timestamp']
+            """
+            _txn = txn['txn']
+            if not txn_timestamp in server.pending_txns:
+                server.pending_txns[txn_timestamp] = []
+            
+            if _txn in server.pending_txns[txn_timestamp]:
+                continue
+            """
+
+            #server.pending_txns[txn_timestamp].append(_txn)
+            server.pending_txns['last_txn_time'] = txn_timestamp
+
             coros_to_gather = []
             for action, data in txn['txn'].items():
                 if not update_last_txn_time == None:
