@@ -240,7 +240,7 @@ async def run(server):
     server.table_flush_trigger = table_flush_trigger
 
     async def table_flush(database: str, table: str, flush_path: dict, **kw):
-        
+        """
         while True:
             # pull last txn time 
             last_txn_time = await server.data[PYQL_TABLE_DB].tables['pyql'].select(
@@ -257,6 +257,15 @@ async def run(server):
                     await asyncio.sleep(0.02)
                     continue
             break
+        """
+        # pull last txn time 
+        last_txn_time = await server.data[PYQL_TABLE_DB].tables['pyql'].select(
+            'last_txn_time',
+            where={
+                'table_name': table
+            }
+        )
+        last_txn_time = last_txn_time[0]['last_txn_time']
 
         log.warning(f"table_flush - table {table} pulling using last_txn_time {last_txn_time}")
         # Using flush_path - pull txns newer than the latest txn
